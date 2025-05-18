@@ -27,6 +27,7 @@
         <nav class="menu-panel" role="menu">
             <a href="#" id="view-log-link" class="menu-link" role="menuitem">View Game Log</a>
             <a href="#" id="settings-link" class="menu-link" role="menuitem">Settings</a>
+            <a href="#" id="about-link" class="menu-link" role="menuitem">About</a>
         </nav>
     </div>
 
@@ -43,7 +44,6 @@
     <!-- Modal overlay (initially hidden) -->
     <div id="modal-overlay" class="modal-overlay" hidden>
         <div id="modal-content" class="modal-content">
-            <!-- Add Player Modal (hidden by default, shown via JS) -->
             <div id="add-player-modal" class="modal add-player-modal" hidden>
                 <h2 class="modal-title">Add Player</h2>
                 <div class="player-list-scroll" id="saved-players-list">
@@ -55,7 +55,6 @@
                     <button id="close-add-player-btn" class="secondary-btn">Cancel</button>
                 </div>
             </div>
-            <!-- New Player Input Modal (hidden by default, shown via JS) -->
             <div id="new-player-modal" class="modal new-player-modal" hidden>
                 <h2 class="modal-title">Enter New Player Name</h2>
                 <input id="new-player-input" class="modal-input" type="text" placeholder="Player name"
@@ -67,13 +66,12 @@
                     </button>
                 </div>
             </div>
-            <!-- Commander Damage Modal (hidden by default, shown via JS) -->
             <div id="commander-damage-modal" class="modal commander-damage-modal" hidden>
                 <h2 class="modal-title" id="commander-damage-title">
                     Commander Damage
                 </h2>
                 <div class="commander-damage-list" id="commander-damage-list">
-                    <!-- Opponents and damage controls will be injected here -->
+                    <!-- Commander damage entries will be injected here -->
                 </div>
                 <div class="modal-actions">
                     <button id="close-commander-damage-btn" class="primary-btn">
@@ -81,7 +79,6 @@
                     </button>
                 </div>
             </div>
-            <!-- Poison Counter Modal (hidden by default, shown via JS) -->
             <div id="poison-modal" class="modal poison-modal" hidden>
                 <h2 class="modal-title" id="poison-modal-title">Poison Counters</h2>
                 <div class="poison-counter-controls">
@@ -99,7 +96,6 @@
                     </button>
                 </div>
             </div>
-            <!-- Game Log Modal (hidden by default, shown via JS) -->
             <div id="game-log-modal" class="modal game-log-modal" hidden>
                 <h2 class="modal-title">Game History</h2>
                 <div id="game-log-list" class="game-log-list">
@@ -109,7 +105,6 @@
                     <button id="close-game-log-btn" class="primary-btn">Close</button>
                 </div>
             </div>
-            <!-- Settings Modal (hidden by default, shown via JS) -->
             <div id="settings-modal" class="modal settings-modal" hidden>
                 <h2 class="modal-title">Settings</h2>
                 <div class="settings-section">
@@ -121,9 +116,25 @@
                         <button id="settings-add-player-btn" class="mini-btn" type="button">+New Player</button>
                     </div>
                 </div>
-
                 <div class="modal-actions">
                     <button id="close-settings-btn" class="primary-btn">Close</button>
+                </div>
+            </div>
+            <div id="about-modal" class="modal about-modal" hidden>
+                <h2 class="modal-title">About</h2>
+                <div class="about-content">
+                    <p>
+                        Commander Life Tracker v0.3<br>
+                        Created by Sable Cantus<br>
+                        <br>
+                        Track life, poison, and commander damage for your Commander games.<br>
+                        <br>
+                        <a href="https://github.com/sc137/CommanderLifeTracker" target="_blank">🚀 View this on
+                            Github</a>
+                    </p>
+                </div>
+                <div class="modal-actions">
+                    <button id="close-about-btn" class="primary-btn">Close</button>
                 </div>
             </div>
             <div id="confirm-modal" class="modal confirm-modal" hidden>
@@ -134,8 +145,8 @@
                     <button id="confirm-modal-ok" class="primary-btn">OK</button>
                 </div>
             </div>
-        </div>
-    </div>
+        </div> <!-- Closes modal-content -->
+    </div> <!-- Closes modal-overlay -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function () {

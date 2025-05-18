@@ -6,10 +6,14 @@ const closeAddPlayerBtn = document.getElementById("close-add-player-btn");
 const newPlayerBtn = document.getElementById("new-player-btn");
 const savedPlayersList = document.getElementById("saved-players-list");
 const addPlayerDoneBtn = document.getElementById("add-player-done-btn");
+const aboutLink = document.getElementById("about-link");
+const aboutModal = document.getElementById("about-modal");
+const closeAboutBtn = document.getElementById("close-about-btn");
+
 let addPlayerModalSource = null; // "settings" or null
 let newPlayerModalSource = null; // "settings" or null
 // --- Internal state for life/poison ---
-const playerState = {};
+let playerState = {};
 
 // Hamburger menu functionality
 const hamburger = document.getElementById("hamburger");
@@ -54,6 +58,20 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
+// Show About Modal
+aboutLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  menuOverlay.hidden = true;
+  modalOverlay.hidden = false;
+  aboutModal.hidden = false;
+});
+
+// Close About Modal
+closeAboutBtn.addEventListener("click", () => {
+  aboutModal.hidden = true;
+  modalOverlay.hidden = true;
+});
+
 function closeMenu() {
   menuOverlay.setAttribute("aria-visible", "false");
   setTimeout(() => {
@@ -93,29 +111,23 @@ function saveCurrentGame() {
 
 // Game Control Buttons: basic click handlers
 document.getElementById("new-game-btn").addEventListener("click", startNewGame);
-
 async function startNewGame() {
-  // If there are no players, skip confirmation and just open the Add Player dialog
-  if (getCurrentGamePlayers().length === 0) {
-    renderSavedPlayersList();
-    modalOverlay.hidden = false;
-    addPlayerModal.hidden = false;
-    newPlayerModal.hidden = true;
-    return;
+  // console.log("startNewGame called");
+  // If there are players, confirm before clearing
+  if (getCurrentGamePlayers().length > 0) {
+    const confirmed = await showConfirm(
+      "This will clear the current game.",
+      "Start a new game?"
+    );
+    if (!confirmed) return;
   }
 
-  //   if (!confirm('Start a new game? This will clear the current game.')) return;
-  const confirmed = await showConfirm(
-    "This will clear the current game.",
-    "Start a new game?"
-  );
-  if (!confirmed) return;
-
-  // Reset all game state
+  // Always reset all game state
   currentGamePlayers = [];
   for (const key in playerState) delete playerState[key];
   for (const key in commanderDamage) delete commanderDamage[key];
   gameEnded = false;
+  saveCurrentGame();
 
   // Update UI
   updateCurrentGamePlayersUI();
@@ -129,12 +141,95 @@ async function startNewGame() {
 
   // If no players, open the Add Player dialog
   if (getCurrentGamePlayers().length === 0) {
+    console.log("No players, showing Add Player modal");
     renderSavedPlayersList();
     modalOverlay.hidden = false;
     addPlayerModal.hidden = false;
     newPlayerModal.hidden = true;
   }
+  updateAddPlayerBtnVisibility();
 }
+
+// async function startNewGame() {
+//   // If there are players, confirm before clearing
+//   if (getCurrentGamePlayers().length > 0) {
+//     const confirmed = await showConfirm(
+//       "This will clear the current game.",
+//       "Start a new game?"
+//     );
+//     if (!confirmed) return;
+//   }
+
+//   // Always reset all game state
+//   currentGamePlayers = [];
+//   for (const key in playerState) delete playerState[key];
+//   for (const key in commanderDamage) delete commanderDamage[key];
+//   gameEnded = false;
+//   saveCurrentGame();
+
+//   // Update UI
+//   updateCurrentGamePlayersUI();
+
+//   // Hide all modals
+//   modalOverlay.hidden = true;
+//   addPlayerModal.hidden = true;
+//   newPlayerModal.hidden = true;
+//   document.getElementById("commander-damage-modal").hidden = true;
+//   document.getElementById("poison-modal").hidden = true;
+
+//   // If no players, open the Add Player dialog
+//   if (getCurrentGamePlayers().length === 0) {
+//     renderSavedPlayersList();
+//     modalOverlay.hidden = false;
+//     addPlayerModal.hidden = false;
+//     newPlayerModal.hidden = true;
+//   }
+//   updateAddPlayerBtnVisibility();
+// }
+
+// async function startNewGame() {
+//   // If there are no players, skip confirmation and just open the Add Player dialog
+//   if (getCurrentGamePlayers().length === 0) {
+//     renderSavedPlayersList();
+//     modalOverlay.hidden = false;
+//     addPlayerModal.hidden = false;
+//     newPlayerModal.hidden = true;
+//     return;
+//   }
+
+//   // Confirm new game
+//   const confirmed = await showConfirm(
+//     "This will clear the current game.",
+//     "Start a new game?"
+//   );
+//   if (!confirmed) return;
+
+//   // Reset all game state
+//   currentGamePlayers = [];
+//   for (const key in playerState) delete playerState[key];
+//   for (const key in commanderDamage) delete commanderDamage[key];
+//   gameEnded = false;
+//   saveCurrentGame();
+
+//   // Update UI
+//   updateCurrentGamePlayersUI();
+
+//   // Hide all modals
+//   modalOverlay.hidden = true;
+//   addPlayerModal.hidden = true;
+//   newPlayerModal.hidden = true;
+//   document.getElementById("commander-damage-modal").hidden = true;
+//   document.getElementById("poison-modal").hidden = true;
+
+//   // If no players, open the Add Player dialog
+//   if (getCurrentGamePlayers().length === 0) {
+//     renderSavedPlayersList();
+//     modalOverlay.hidden = false;
+//     addPlayerModal.hidden = false;
+//     newPlayerModal.hidden = true;
+//   }
+//   updateAddPlayerBtnVisibility();
+// }
 
 // Show Add Player Modal
 addPlayerBtn.addEventListener("click", () => {
@@ -152,21 +247,8 @@ function closeAddPlayerModal() {
   addPlayerModal.hidden = true;
   addPlayerDoneBtn.style.display = ""; // Reset Done button for next time
 
-  // Save the empty game state
-  currentGamePlayers = [];
-  for (const key in playerState) delete playerState[key];
-  for (const key in commanderDamage) delete commanderDamage[key];
-  gameEnded = false;
-  saveCurrentGame();
-
-  // Add default player if set and exists in saved players
-  const defaultPlayer = getDefaultPlayer();
-  if (defaultPlayer && getSavedPlayers().includes(defaultPlayer)) {
-    addPlayerToGame(defaultPlayer);
-    updateCurrentGamePlayersUI();
-  } else {
-    updateCurrentGamePlayersUI();
-  }
+  // Do NOT reset the game state here! Only update UI.
+  updateCurrentGamePlayersUI();
 
   if (addPlayerModalSource === "settings") {
     renderSettingsPlayersList();
@@ -260,18 +342,62 @@ function removePlayer(playerName) {
 
 // Render saved players list UI
 let selectedPlayers = new Set();
+// original multi select (works)
+// function renderSavedPlayersList() {
+//   const savedPlayers = getSavedPlayers();
+//   const savedPlayersList = document.getElementById("saved-players-list");
+//   savedPlayersList.innerHTML = "";
+//   selectedPlayers = new Set();
+
+//   if (savedPlayers.length === 0) {
+//     savedPlayersList.innerHTML =
+//       '<div class="empty-player-list">No saved players yet.</div>';
+//     return;
+//   }
+//   savedPlayers.forEach((player) => {
+//     const row = document.createElement("div");
+//     row.className = "saved-player-row";
+//     row.textContent = player;
+
+//     // Toggle selection on click
+//     row.addEventListener("click", () => {
+//       if (selectedPlayers.has(player)) {
+//         selectedPlayers.delete(player);
+//         row.classList.remove("selected");
+//       } else {
+//         selectedPlayers.add(player);
+//         row.classList.add("selected");
+//       }
+//     });
+
+//     savedPlayersList.appendChild(row);
+//   });
+// }
+
+// alphabetized multi select
 function renderSavedPlayersList() {
   const savedPlayers = getSavedPlayers();
+  const defaultPlayer = getDefaultPlayer();
+
+  // Remove default player from the list if present
+  const players = savedPlayers.filter((p) => p !== defaultPlayer);
+
+  // Sort the rest alphabetically (case-insensitive)
+  players.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+
+  // If default player exists, put it at the top
+  const orderedPlayers = defaultPlayer ? [defaultPlayer, ...players] : players;
+
   const savedPlayersList = document.getElementById("saved-players-list");
   savedPlayersList.innerHTML = "";
   selectedPlayers = new Set();
 
-  if (savedPlayers.length === 0) {
+  if (orderedPlayers.length === 0) {
     savedPlayersList.innerHTML =
       '<div class="empty-player-list">No saved players yet.</div>';
     return;
   }
-  savedPlayers.forEach((player) => {
+  orderedPlayers.forEach((player) => {
     const row = document.createElement("div");
     row.className = "saved-player-row";
     row.textContent = player;
@@ -290,6 +416,41 @@ function renderSavedPlayersList() {
     savedPlayersList.appendChild(row);
   });
 }
+
+// DO NOT USE
+// function renderSavedPlayersList() {
+//   const savedPlayers = getSavedPlayers();
+//   const defaultPlayer = getDefaultPlayer();
+
+//   // Remove default player from the list if present
+//   const players = savedPlayers.filter(p => p !== defaultPlayer);
+
+//   // Sort alphabetically (case-insensitive)
+//   players.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+//   // If default player exists, put it at the top
+//   const orderedPlayers = defaultPlayer ? [defaultPlayer, ...players] : players;
+
+//   const list = document.getElementById("saved-players-list");
+//   list.innerHTML = "";
+
+//   orderedPlayers.forEach(player => {
+//     const row = document.createElement("div");
+//     row.className = "player-list-row"; // <-- Fix class name
+//     row.innerHTML = `<span class="player-name">${player}</span>`;
+//     // Toggle selection on click
+//     row.addEventListener("click", () => {
+//       if (selectedPlayers.has(player)) {
+//         selectedPlayers.delete(player);
+//         row.classList.remove("selected");
+//       } else {
+//         selectedPlayers.add(player);
+//         row.classList.add("selected");
+//       }
+//     });
+//     list.appendChild(row);
+//   });
+// }
 
 // Handle Save New Player button click
 saveNewPlayerBtn.addEventListener("click", handleSaveNewPlayer);
@@ -394,24 +555,24 @@ function getCurrentGamePlayers() {
 }
 
 // Handle selection from saved players list
-savedPlayersList.addEventListener("click", function (e) {
-  const row = e.target.closest(".player-list-row");
-  if (!row) return;
-  const playerName = row.querySelector(".player-name")?.textContent;
-  if (!playerName) return;
+// savedPlayersList.addEventListener("click", function (e) {
+//   const row = e.target.closest(".player-list-row");
+//   if (!row) return;
+//   const playerName = row.querySelector(".player-name")?.textContent;
+//   if (!playerName) return;
 
-  // Prevent adding duplicate players to the current game
-  if (currentGamePlayers.includes(playerName)) {
-    showConfirm("Player is already in the current game.", "Notice");
-    return;
-  }
+//   // Prevent adding duplicate players to the current game
+//   if (currentGamePlayers.includes(playerName)) {
+//     showConfirm("Player is already in the current game.", "Notice");
+//     return;
+//   }
 
-  addPlayerToGame(playerName);
-  updateCurrentGamePlayersUI();
-  // Optionally close modal after selection:
-  addPlayerModal.hidden = true;
-  modalOverlay.hidden = true;
-});
+//   addPlayerToGame(playerName);
+//   updateCurrentGamePlayersUI();
+//   // Optionally close modal after selection:
+//   addPlayerModal.hidden = true;
+//   modalOverlay.hidden = true;
+// });
 
 // Update UI for current game players
 function updateCurrentGamePlayersUI() {
@@ -420,7 +581,7 @@ function updateCurrentGamePlayersUI() {
   const players = getCurrentGamePlayers();
   if (players.length === 0) {
     container.innerHTML =
-      '<div class="empty-player-list"><h2>Add a player to the game. Set a default player in the Settings.</h2></div>';
+      '<div class="empty-player-list"><h2 class="empty-player-list">There are no players in this game yet.<br><br>Press +Player to add players to the game.<br><br> You may set a default player in the Settings.</h2></div>';
     return;
   }
   players.forEach((player) => {
@@ -804,6 +965,11 @@ function markPlayerAsDied(playerName) {
 
 let draggedPlayer = null;
 
+// Utility to show/hide the +Player button based on game state
+function updateAddPlayerBtnVisibility() {
+  addPlayerBtn.style.display = gameEnded ? "none" : "";
+}
+
 // --- Winner Declaration Logic ---
 
 async function declareWinner(playerName) {
@@ -834,8 +1000,7 @@ async function declareWinner(playerName) {
   );
   if (winnerTile) winnerTile.classList.add("winner-tile");
 
-  // 4. Optionally, show a message or modal
-  //   showConfirm(`${playerName} is the winner! Game over.`, 'Notice');
+   updateAddPlayerBtnVisibility();
 }
 
 // Retrieve the full game log array
@@ -1174,12 +1339,19 @@ function reorderPlayers(fromPlayer, toPlayer) {
   saveCurrentGame();
 }
 
+// modalOverlay.addEventListener("mousedown", (e) => {
+//   console.log("modalOverlay click", { target: e.target, modalContent });
+//   if (!modalContent.contains(e.target)) {
+//     hideModal();
+//   }
+// });
+
 modalOverlay.addEventListener("mousedown", (e) => {
-  console.log("modalOverlay click", { target: e.target, modalContent });
-  if (!modalContent.contains(e.target)) {
+  if (e.target === modalOverlay) {
     hideModal();
   }
 });
+
 
 document
   .getElementById("settings-add-player-btn")

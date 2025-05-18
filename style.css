@@ -273,6 +273,21 @@ body {
   display: none !important;
 }
 
+.about-modal {
+  line-height: 1.5;
+  padding-left: 10px
+}
+
+.about-modal .modal-actions {
+  justify-content: flex-end;
+}
+
+.game-log-modal .modal-actions,
+.settings-modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* Main Content */
 main {
   flex: 1 1 auto;
@@ -283,6 +298,12 @@ main {
   max-width: 600px;
   margin: 0 auto;
   width: 100%;
+}
+
+.empty-player-list {
+  margin: 0 auto;
+  max-width: 80%;
+  font-size: 1.2em;
 }
 
 .player-tiles-container {
@@ -600,7 +621,21 @@ button:active {
   align-items: stretch;
   min-width: 300px;
   max-width: 95vw;
-  max-height: 80vh;
+  max-height: 95vh;
+}
+
+/* Add Player Modal: use more vertical space */
+/* #add-player-modal.modal {
+  max-height: 90vh;
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
+} */
+
+#saved-players-list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  max-height: 60vh;
 }
 
 .saved-player-row.selected {

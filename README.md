@@ -14,4 +14,6 @@ Track your life totals when playing Magic the Gathering Commander (aka EDH).
 
 ✅ Add or remove players by name
 
+✅ The first player you enter will become the "default" player
+
 ## [🚀 View this on the web.](https://sc137.github.io/CommanderLifeTracker)

@@ -9,6 +9,10 @@ const addPlayerDoneBtn = document.getElementById("add-player-done-btn");
 const aboutLink = document.getElementById("about-link");
 const aboutModal = document.getElementById("about-modal");
 const closeAboutBtn = document.getElementById("close-about-btn");
+const newPlayerModal = document.getElementById("new-player-modal");
+const saveNewPlayerBtn = document.getElementById("save-new-player-btn");
+const cancelNewPlayerBtn = document.getElementById("cancel-new-player-btn");
+const newPlayerInput = document.getElementById("new-player-input");
 
 let addPlayerModalSource = null; // "settings" or null
 let newPlayerModalSource = null; // "settings" or null
@@ -23,15 +27,16 @@ const viewLogLink = document.getElementById("view-log-link");
 const settingsLink = document.getElementById("settings-link");
 
 let gameEnded = false;
+let winner = null;
 
-async function declareWinner(playerName) {
-  if (gameEnded) return; // Prevent multiple calls
-  const confirmed = await showConfirm(
-    `This will end the game.`, `Declare ${playerName} as the winner?`
-  );
-  if (!confirmed) return;
-  gameEnded = true;
-}
+// async function declareWinner(playerName) {
+//   if (gameEnded) return; // Prevent multiple calls
+//   const confirmed = await showConfirm(
+//     `This will end the game.`, `Declare ${playerName} as the winner?`
+//   );
+//   if (!confirmed) return;
+//   gameEnded = true;
+// }
 
 // Open menu
 hamburger.addEventListener("click", () => {
@@ -105,6 +110,8 @@ function saveCurrentGame() {
     JSON.stringify({
       players: currentGamePlayers,
       state: playerState,
+      gameEnded: gameEnded,
+      winner: winner
     })
   );
 }
@@ -139,9 +146,37 @@ async function startNewGame() {
   document.getElementById("commander-damage-modal").hidden = true;
   document.getElementById("poison-modal").hidden = true;
 
-  // If no players, open the Add Player dialog
+  // If no players, add default player automatically
+  const defaultPlayer = getDefaultPlayer();
+  const savedPlayers = getSavedPlayers();
+  if (
+    getCurrentGamePlayers().length === 0 &&
+    defaultPlayer &&
+    savedPlayers.includes(defaultPlayer)
+  ) {
+    addPlayerToGame(defaultPlayer);
+    updateCurrentGamePlayersUI();
+    saveCurrentGame();
+    return;
+  }
+
+  // Check if there are no saved players at all
+  if (savedPlayers.length === 0) {
+    // Show New Player modal directly
+    modalOverlay.hidden = false;
+    addPlayerModal.hidden = true;
+    newPlayerModal.hidden = false;
+
+    try {
+      newPlayerInput.focus();
+    } catch (e) {
+      console.log("Could not focus new player input:", e);
+    }
+    return;
+  }
+
+  // If still no players, open the Add Player dialog
   if (getCurrentGamePlayers().length === 0) {
-    console.log("No players, showing Add Player modal");
     renderSavedPlayersList();
     modalOverlay.hidden = false;
     addPlayerModal.hidden = false;
@@ -149,87 +184,6 @@ async function startNewGame() {
   }
   updateAddPlayerBtnVisibility();
 }
-
-// async function startNewGame() {
-//   // If there are players, confirm before clearing
-//   if (getCurrentGamePlayers().length > 0) {
-//     const confirmed = await showConfirm(
-//       "This will clear the current game.",
-//       "Start a new game?"
-//     );
-//     if (!confirmed) return;
-//   }
-
-//   // Always reset all game state
-//   currentGamePlayers = [];
-//   for (const key in playerState) delete playerState[key];
-//   for (const key in commanderDamage) delete commanderDamage[key];
-//   gameEnded = false;
-//   saveCurrentGame();
-
-//   // Update UI
-//   updateCurrentGamePlayersUI();
-
-//   // Hide all modals
-//   modalOverlay.hidden = true;
-//   addPlayerModal.hidden = true;
-//   newPlayerModal.hidden = true;
-//   document.getElementById("commander-damage-modal").hidden = true;
-//   document.getElementById("poison-modal").hidden = true;
-
-//   // If no players, open the Add Player dialog
-//   if (getCurrentGamePlayers().length === 0) {
-//     renderSavedPlayersList();
-//     modalOverlay.hidden = false;
-//     addPlayerModal.hidden = false;
-//     newPlayerModal.hidden = true;
-//   }
-//   updateAddPlayerBtnVisibility();
-// }
-
-// async function startNewGame() {
-//   // If there are no players, skip confirmation and just open the Add Player dialog
-//   if (getCurrentGamePlayers().length === 0) {
-//     renderSavedPlayersList();
-//     modalOverlay.hidden = false;
-//     addPlayerModal.hidden = false;
-//     newPlayerModal.hidden = true;
-//     return;
-//   }
-
-//   // Confirm new game
-//   const confirmed = await showConfirm(
-//     "This will clear the current game.",
-//     "Start a new game?"
-//   );
-//   if (!confirmed) return;
-
-//   // Reset all game state
-//   currentGamePlayers = [];
-//   for (const key in playerState) delete playerState[key];
-//   for (const key in commanderDamage) delete commanderDamage[key];
-//   gameEnded = false;
-//   saveCurrentGame();
-
-//   // Update UI
-//   updateCurrentGamePlayersUI();
-
-//   // Hide all modals
-//   modalOverlay.hidden = true;
-//   addPlayerModal.hidden = true;
-//   newPlayerModal.hidden = true;
-//   document.getElementById("commander-damage-modal").hidden = true;
-//   document.getElementById("poison-modal").hidden = true;
-
-//   // If no players, open the Add Player dialog
-//   if (getCurrentGamePlayers().length === 0) {
-//     renderSavedPlayersList();
-//     modalOverlay.hidden = false;
-//     addPlayerModal.hidden = false;
-//     newPlayerModal.hidden = true;
-//   }
-//   updateAddPlayerBtnVisibility();
-// }
 
 // Show Add Player Modal
 addPlayerBtn.addEventListener("click", () => {
@@ -264,12 +218,6 @@ function closeAddPlayerModal() {
 modalContent.addEventListener("mousedown", (e) => {
   e.stopPropagation();
 });
-
-const newPlayerModal = document.getElementById("new-player-modal");
-/* const newPlayerBtn = document.getElementById('new-player-btn'); */ // Removed duplicate declaration
-const saveNewPlayerBtn = document.getElementById("save-new-player-btn");
-const cancelNewPlayerBtn = document.getElementById("cancel-new-player-btn");
-const newPlayerInput = document.getElementById("new-player-input");
 
 // Show New Player Input Modal
 newPlayerBtn.addEventListener("click", () => {
@@ -393,10 +341,14 @@ function renderSavedPlayersList() {
   selectedPlayers = new Set();
 
   if (orderedPlayers.length === 0) {
-    savedPlayersList.innerHTML =
-      '<div class="empty-player-list">No saved players yet.</div>';
+    // No saved players: show the New Player modal instead
+    modalOverlay.hidden = false;
+    addPlayerModal.hidden = true;
+    newPlayerModal.hidden = false;
+    setTimeout(() => newPlayerInput.focus(), 100);
     return;
   }
+
   orderedPlayers.forEach((player) => {
     const row = document.createElement("div");
     row.className = "saved-player-row";
@@ -460,7 +412,7 @@ function handleSaveNewPlayer() {
 
   // Validate player name input
   if (!name) {
-    showInputError("Player name cannot be empty.");
+    showInputError("Please enter a player name.");
     return;
   }
   if (name.length > 24) {
@@ -477,6 +429,11 @@ function handleSaveNewPlayer() {
   if (!success) {
     showInputError("Could not save player. Try a different name.");
     return;
+  }
+
+  // If no default player, set this as default
+  if (!getDefaultPlayer()) {
+    setDefaultPlayer(name);
   }
 
   // Update UI (refresh saved players list)
@@ -972,14 +929,52 @@ function updateAddPlayerBtnVisibility() {
 
 // --- Winner Declaration Logic ---
 
+// async function declareWinner(playerName) {
+//   //   if (!confirm(`Declare ${playerName} as the winner? This will end the game.`)) return;
+//   if (gameEnded) return; // Prevent multiple calls
+//   const confirmed = await showConfirm(
+//     `This will end the game.`, `Declare ${playerName} as the winner?`
+//   );
+//   if (!confirmed) return;
+
+//   gameEnded = true;
+
+//   // 1. Log game data
+//   const playersInGame = getCurrentGamePlayers();
+//   const finalLifeTotals = {};
+//   playersInGame.forEach((p) => {
+//     finalLifeTotals[p] = playerState[p] ? playerState[p].life : 0;
+//   });
+//   logGame(playerName, playersInGame, finalLifeTotals);
+
+//   // 2. Freeze game state: disable all player tiles and controls
+//   document.querySelectorAll(".player-tile").forEach((tile) => {
+//     tile.classList.add("game-ended");
+//     tile.querySelectorAll("button").forEach((btn) => (btn.disabled = true));
+//   });
+
+//   // 3. Update UI: show winner visually
+//   const winnerTile = document.querySelector(
+//     `.player-tile[data-player="${playerName}"]`
+//   );
+//   if (winnerTile) winnerTile.classList.add("winner-tile");
+
+//   // 4. SAVE the game ended state to localStorage
+//   saveCurrentGame(); // Add this line to save the gameEnded state
+
+//   updateAddPlayerBtnVisibility();
+// }
+
 async function declareWinner(playerName) {
-  //   if (!confirm(`Declare ${playerName} as the winner? This will end the game.`)) return;
   if (gameEnded) return; // Prevent multiple calls
   const confirmed = await showConfirm(
     `This will end the game.`, `Declare ${playerName} as the winner?`
   );
   if (!confirmed) return;
+
   gameEnded = true;
+  winner = playerName; // Store the winner's name
+
   // 1. Log game data
   const playersInGame = getCurrentGamePlayers();
   const finalLifeTotals = {};
@@ -1000,7 +995,10 @@ async function declareWinner(playerName) {
   );
   if (winnerTile) winnerTile.classList.add("winner-tile");
 
-   updateAddPlayerBtnVisibility();
+  // 4. SAVE the game ended state to localStorage
+  saveCurrentGame(); // Add this line to save the gameEnded state
+
+  updateAddPlayerBtnVisibility();
 }
 
 // Retrieve the full game log array
@@ -1075,12 +1073,11 @@ function renderGameLog() {
       // Header: Winner and Date
       const header = document.createElement("div");
       header.className = "game-log-header";
-      header.innerHTML = `<span class="game-log-winner">🏆 ${
-        entry.winner
-      }</span>
+      header.innerHTML = `<span class="game-log-winner">🏆 ${entry.winner
+        }</span>
       <span class="game-log-date">${new Date(
-        entry.endedAt
-      ).toLocaleString()}</span>`;
+          entry.endedAt
+        ).toLocaleString()}</span>`;
 
       // Details: Players and Life Totals
       const details = document.createElement("div");
@@ -1310,7 +1307,26 @@ function showConfirm(message, title = "Confirm") {
 }
 
 // --- Event Handlers ---
+// Fix the +Player button click handler
 addPlayerBtn.addEventListener("click", () => {
+  const savedPlayers = getSavedPlayers();
+
+  // Check if there are no saved players first
+  if (savedPlayers.length === 0) {
+    // Show New Player modal directly
+    modalOverlay.hidden = false;
+    addPlayerModal.hidden = true;
+    newPlayerModal.hidden = false;
+
+    try {
+      newPlayerInput.focus();
+    } catch (e) {
+      console.log("Could not focus new player input:", e);
+    }
+    return;
+  }
+
+  // Otherwise, render the saved player list as normal
   renderSavedPlayersList();
   modalOverlay.hidden = false;
   addPlayerModal.hidden = false;
@@ -1364,6 +1380,53 @@ document
     document.getElementById("new-player-input").focus();
   });
 
+
+//   // Restore current game if it exists
+// window.addEventListener("DOMContentLoaded", () => {
+//   document.getElementById("modal-overlay").hidden = true;
+//   document.getElementById("add-player-modal").hidden = true;
+//   document.getElementById("new-player-modal").hidden = true;
+//   document.getElementById("commander-damage-modal").hidden = true;
+//   document.getElementById("poison-modal").hidden = true;
+
+//   // Restore current game if it exists
+//   const savedGame = localStorage.getItem("cmdrtrackr_current_game");
+//   if (savedGame) {
+//     try {
+//       const { players, state, gameEnded: savedGameEnded, winner } = JSON.parse(savedGame);
+//       currentGamePlayers = players || [];
+//       playerState = state || {};
+//       gameEnded = savedGameEnded || false; // Set gameEnded from saved state
+//       updateCurrentGamePlayersUI();
+
+//       // If game was ended, re-apply visual state
+//       if (gameEnded) {
+//         document.querySelectorAll(".player-tile").forEach((tile) => {
+//           tile.classList.add("game-ended");
+//           tile.querySelectorAll("button").forEach((btn) => (btn.disabled = true));
+
+//           // If this player was the winner, highlight them
+//           if (winner && tile.dataset.player === winner) {
+//             tile.classList.add("winner-tile");
+//           }
+//         });
+//       }
+//       updateAddPlayerBtnVisibility(); // Always update button visibility
+//       return;
+//     } catch (e) {
+//       // If corrupted, ignore and continue
+//     }
+//   }
+
+//   // If no current game, add default player if set
+//   const defaultPlayer = getDefaultPlayer();
+//   if (defaultPlayer && getSavedPlayers().includes(defaultPlayer)) {
+//     addPlayerToGame(defaultPlayer);
+//     updateCurrentGamePlayersUI();
+//   }
+//   updateAddPlayerBtnVisibility(); // Always update button visibility
+// });
+
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-overlay").hidden = true;
   document.getElementById("add-player-modal").hidden = true;
@@ -1375,10 +1438,25 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedGame = localStorage.getItem("cmdrtrackr_current_game");
   if (savedGame) {
     try {
-      const { players, state } = JSON.parse(savedGame);
+      const { players, state, gameEnded: savedGameEnded, winner } = JSON.parse(savedGame);
       currentGamePlayers = players || [];
       playerState = state || {};
+      gameEnded = savedGameEnded || false; // Set gameEnded from saved state
       updateCurrentGamePlayersUI();
+
+      // If game was ended, re-apply visual state
+      if (gameEnded) {
+        document.querySelectorAll(".player-tile").forEach((tile) => {
+          tile.classList.add("game-ended");
+          tile.querySelectorAll("button").forEach((btn) => (btn.disabled = true));
+
+          // If this player was the winner, highlight them
+          if (winner && tile.dataset.player === winner) {
+            tile.classList.add("winner-tile");
+          }
+        });
+      }
+      updateAddPlayerBtnVisibility(); // Always update button visibility
       return;
     } catch (e) {
       // If corrupted, ignore and continue
@@ -1391,4 +1469,5 @@ window.addEventListener("DOMContentLoaded", () => {
     addPlayerToGame(defaultPlayer);
     updateCurrentGamePlayersUI();
   }
+  updateAddPlayerBtnVisibility(); // Always update button visibility
 });

@@ -158,7 +158,7 @@
 
 **Phase IV: Game End & History**
 
-21. **JS: "Declare Winner" Logic**
+21. **JS: "Declare Winner" Logic** ✅
     *   **Prompt:** "Write JavaScript for the 'Declare Winner' (trophy) icon on player tiles:
         *   On click, show a confirmation modal (e.g., 'Mark [Player Name] as winner? Yes/No').
         *   If confirmed:
@@ -167,14 +167,14 @@
             *   The game state should remain visible."
     *   Reference: "Declaring a Winner", "Post-Winner Declaration State".
 
-22. **JS: Game Logging Utilities**
+22. **JS: Game Logging Utilities** ✅
     *   **Prompt:** "Write JavaScript functions for game logging to Local Storage:
         *   `logGame(winnerName, playersInGame, finalLifeTotals)`: Creates a game log object (including current date/time) and saves it to an array in Local Storage.
         *   `getGameLog()`: Retrieves all game log entries.
         *   `deleteGameLogEntry(gameId)`: Deletes a specific game log entry (you'll need a way to identify entries, maybe by timestamp or an index)."
     *   Reference: "Game Log / History", "Log Content".
 
-23. **HTML & CSS: Game Log View**
+23. **HTML & CSS: Game Log View** ✅
     *   **Prompt:** "Design the HTML structure for the Game Log view (accessed from hamburger menu). It should:
         *   Have a title like 'Game History'.
         *   Display a list where each item represents a logged game.
@@ -183,7 +183,7 @@
     *   **Prompt (CSS):** "Style the Game Log view and its entries."
     *   Reference: "Game Log / History".
 
-24. **JS: Display Game Log**
+24. **JS: Display Game Log** ✅
     *   **Prompt:** "Write JavaScript to:
         *   When 'View Game Log' is clicked, fetch data using `getGameLog()`.
         *   Dynamically populate the Game Log view with the entries.
@@ -192,7 +192,7 @@
 
 **Phase V: Settings & PWA**
 
-25. **HTML & CSS: Settings View**
+25. **HTML & CSS: Settings View** ✅
     *   **Prompt:** "Design the HTML for the Settings view (accessed from hamburger menu). It should:
         *   Have a title like 'Settings'.
         *   List all persistently saved players (from `getSavedPlayers()`).
@@ -200,21 +200,21 @@
     *   **Prompt (CSS):** "Style the Settings view."
     *   Reference: "Persistent Player List Management (Default Player)", "Settings".
 
-26. **JS: Settings Logic (Default Player)**
+26. **JS: Settings Logic (Default Player)** ✅
     *   **Prompt:** "Write JavaScript for the Settings view:
         *   Populate the list of saved players.
         *   Highlight the currently set default player.
         *   When a new default player is selected, call `setDefaultPlayer()` and update the UI."
     *   Reference: "Persistent Player List Management (Default Player)".
 
-27. **JS: "New Game" Button Logic (Full)**
+27. **JS: "New Game" Button Logic (Full)** ✅
     *   **Prompt:** "Finalize the 'New Game' button JavaScript:
         *   Clear any current game state (remove player tiles, reset internal game data).
         *   Call `getDefaultPlayer()`. If a default player exists, call `addPlayerToGame()` for them and create their tile.
         *   Unfreeze UI elements if they were frozen from a previous game."
     *   Reference: "Starting a New Game".
 
-28. **PWA: Manifest File**
+28. **PWA: Manifest File** ✅
     *   **Prompt:** "Create a `manifest.json` file for this PWA. Include:
         *   `short_name`, `name`
         *   `icons` (placeholder for now, or specify a simple one)
@@ -223,35 +223,22 @@
         *   `background_color`, `theme_color` (can be generic)."
     *   Reference: "Offline First & PWA".
 
-29. **PWA: Service Worker for Caching**
+29. **PWA: Service Worker for Caching** ✅
     *   **Prompt:** "Create a basic `service-worker.js` file. It should:
         *   Cache essential app assets (HTML, CSS, JS files, any core images) on install.
         *   Serve cached assets when offline (Cache First or Network First strategy)."
     *   Reference: "Offline First & PWA".
 
-30. **HTML & JS: Register Service Worker**
+30. **HTML & JS: Register Service Worker** ✅
     *   **Prompt:** "Add JavaScript to `index.html` (or a main JS file) to register the service worker."
     *   Reference: "Offline First & PWA".
 
 **Phase VI: General UX and Polish**
 
-31. **JS: Modal Handling**
+31. **JS: Modal Handling** ✅
     *   **Prompt:** "Create generic JavaScript functions to show/hide modals. Modals should probably overlay the content and prevent interaction with the background."
     *   This can be used for Commander Damage, Poison, New Player Name, Confirmations, etc.
 
-32. **CSS: Responsiveness & Polish**
+32. **CSS: Responsiveness & Polish** ✅
     *   **Prompt:** "Review all CSS. Ensure the layout is responsive across mobile, tablet, and desktop. Add smooth transitions for modal appearances, button clicks, tile fading, etc. Refine typography and spacing for readability."
     *   This is an iterative step.
-
----
-
-**Tips for Using with LLM:**
-
-*   **One Prompt at a Time:** Feed these prompts one by one.
-*   **Provide Context:** Always give the LLM the relevant section from the *Planning Document* we created.
-*   **Iterate:** The LLM might not get it perfect first try. Ask for revisions, e.g., "Can you make the buttons larger?" or "Ensure this function also updates X."
-*   **Test Frequently:** After getting code for a few prompts, integrate it and test in your browser.
-*   **Separate Concerns:** Try to keep HTML, CSS, and JS generation somewhat separate if the LLM mixes them too much initially, though for small components, it might be okay.
-*   **State Management:** Be clear about where data is stored (Local Storage vs. in-memory JS variables for current game state).
-
-This list should give you a very structured way to approach building the app with LLM assistance! Good luck!

@@ -1090,21 +1090,32 @@ button:active {
     font-size: 1rem;
     padding: 0.7em 1.2em;
   }
-  .add-player-modal {
-    min-width: 90vw;
-    padding: 0;
-  }
   .player-list-scroll {
     max-height: 160px;
     padding: var(--spacing-xs);
   }
-  .new-player-modal {
-    min-width: 90vw;
-    padding: 0;
-  }
   .modal-input {
     font-size: 1rem;
     padding: 0.6em 0.8em;
+  }
+    
+  .add-player-modal,
+  .new-player-modal,
+  .settings-modal,
+  .confirm-modal,
+  .commander-damage-modal,
+  .poison-modal,
+  .game-log-modal,
+  .about-modal {
+    min-width: 80vw;
+    max-width: 90vw;
+    padding: var(--spacing-xs);
+  }
+  
+  /* parent modal content container */
+  .modal-content {
+    max-width: 85vw;  /* Change from 90vw to 85vw */
+    padding: var(--spacing-xs) var(--spacing-xs);
   }
 }
 

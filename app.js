@@ -134,6 +134,9 @@ async function startNewGame() {
   for (const key in playerState) delete playerState[key];
   for (const key in commanderDamage) delete commanderDamage[key];
   gameEnded = false;
+  // Explicitly show the +Player button
+  addPlayerBtn.style.display = "block";
+  addPlayerBtn.hidden = false;
   saveCurrentGame();
 
   // Update UI
@@ -681,6 +684,49 @@ function createPlayerTile(playerName) {
     }
   });
 
+  // Add long-press event handlers for both removal and reordering
+  let pressTimer;
+  let longPressActive = false;
+  
+  tile.addEventListener("mousedown", handleTileMouseDown);
+  tile.addEventListener("touchstart", handleTileTouchStart, { passive: false });
+  
+  function handleTileMouseDown(e) {
+    if (gameEnded) return;
+    
+    pressTimer = setTimeout(() => {
+      longPressActive = true;
+      showTileContextMenu(tile, playerName, e.clientX, e.clientY);
+    }, 300); // 500ms hold time
+  }
+  
+  function handleTileTouchStart(e) {
+    if (gameEnded) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    pressTimer = setTimeout(() => {
+      longPressActive = true;
+      showTileContextMenu(tile, playerName, touch.clientX, touch.clientY);
+    }, 500); // 500ms hold time
+  }
+  
+  // Cancel the timer if the user releases before the long press threshold
+  tile.addEventListener("mouseup", () => {
+    clearTimeout(pressTimer);
+    longPressActive = false;
+  });
+  
+  tile.addEventListener("touchend", () => {
+    clearTimeout(pressTimer);
+    longPressActive = false;
+  });
+  
+  tile.addEventListener("mouseleave", () => {
+    clearTimeout(pressTimer);
+    longPressActive = false;
+  });
+
   actions.appendChild(commanderBtn);
   actions.appendChild(poisonBtn);
   actions.appendChild(diedBtn);
@@ -690,6 +736,143 @@ function createPlayerTile(playerName) {
   tile.appendChild(actions);
 
   return tile;
+}
+
+function showTileContextMenu(tile, playerName, x, y) {
+  // Remove any existing context menus
+  removeTileContextMenu();
+  
+  // Create context menu
+  const contextMenu = document.createElement("div");
+  contextMenu.id = "tile-context-menu";
+  contextMenu.className = "tile-context-menu";
+  
+  // Create menu items
+  const moveItem = document.createElement("button");
+  moveItem.className = "context-menu-item";
+  moveItem.innerHTML = "🔄 Move";
+  moveItem.addEventListener("click", () => {
+    enableDragMode(tile, playerName);
+    removeTileContextMenu();
+  });
+  
+  const removeItem = document.createElement("button");
+  removeItem.className = "context-menu-item remove-item";
+  removeItem.innerHTML = "❌ Remove";
+  removeItem.addEventListener("click", () => {
+    confirmRemovePlayer(playerName);
+    removeTileContextMenu();
+  });
+  
+  // Add items to menu
+  contextMenu.appendChild(moveItem);
+  contextMenu.appendChild(removeItem);
+  
+  // Position menu
+  document.body.appendChild(contextMenu);
+  
+  // Position the menu relative to the click, but ensure it stays on screen
+  const menuRect = contextMenu.getBoundingClientRect();
+  const leftPos = Math.min(x, window.innerWidth - menuRect.width - 10);
+  const topPos = Math.min(y, window.innerHeight - menuRect.height - 10);
+  
+  contextMenu.style.left = `${leftPos}px`;
+  contextMenu.style.top = `${topPos}px`;
+  
+  // Close menu when clicking outside
+  setTimeout(() => {
+    document.addEventListener("click", function closeMenu(e) {
+      if (!contextMenu.contains(e.target)) {
+        removeTileContextMenu();
+        document.removeEventListener("click", closeMenu);
+      }
+    });
+  }, 10);
+}
+
+function removeTileContextMenu() {
+  const existingMenu = document.getElementById("tile-context-menu");
+  if (existingMenu) {
+    existingMenu.remove();
+  }
+}
+
+async function confirmRemovePlayer(playerName) {
+  if (gameEnded) return; // Don't allow removal if game has ended
+  
+  const confirmed = await showConfirm(
+    `Remove ${playerName} from the game?`,
+    "Confirm"
+  );
+  
+  if (confirmed) {
+    removePlayerFromGame(playerName);
+    updateCurrentGamePlayersUI();
+    
+    // If no players left, update UI accordingly
+    if (getCurrentGamePlayers().length === 0) {
+      // Optional: Show a message or prompt to add players
+      showConfirm("All players removed. Add players to continue.", "Notice");
+    }
+  }
+}
+
+function enableDragMode(tile, playerName) {
+  // Add visual indication that tile is being moved
+  tile.classList.add("dragging");
+  
+  // Create overlay message
+  const moveOverlay = document.createElement("div");
+  moveOverlay.className = "move-overlay";
+  moveOverlay.textContent = "Tap another player to swap positions";
+  document.body.appendChild(moveOverlay);
+  
+  // Get all player tiles (except the one being dragged)
+  const allTiles = document.querySelectorAll(".player-tile:not(.dragging)");
+  
+  // Add click handler to all other tiles
+  const clickHandler = function(e) {
+    const targetTile = e.currentTarget;
+    const targetPlayer = targetTile.dataset.player;
+    
+    // Swap players
+    reorderPlayers(playerName, targetPlayer);
+    updateCurrentGamePlayersUI();
+    
+    // Clean up
+    disableDragMode();
+  };
+  
+  allTiles.forEach(otherTile => {
+    otherTile.addEventListener("click", clickHandler);
+    otherTile.classList.add("drop-target");
+  });
+  
+  // Add cancel button
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className = "cancel-move-btn";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", disableDragMode);
+  document.body.appendChild(cancelBtn);
+  
+  // Function to disable drag mode
+  function disableDragMode() {
+    tile.classList.remove("dragging");
+    allTiles.forEach(otherTile => {
+      otherTile.removeEventListener("click", clickHandler);
+      otherTile.classList.remove("drop-target");
+    });
+    moveOverlay.remove();
+    cancelBtn.remove();
+  }
+  
+  // Cancel drag mode when clicking outside
+  document.addEventListener("click", function cancelDrag(e) {
+    if (!e.target.closest(".player-tile") && !e.target.closest(".cancel-move-btn")) {
+      disableDragMode();
+      document.removeEventListener("click", cancelDrag);
+    }
+  });
 }
 
 // --- Life Total Management ---

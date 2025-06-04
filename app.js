@@ -613,7 +613,12 @@ function createPlayerTile(playerName) {
   winnerBtn.setAttribute("aria-label", "Declare Winner");
   winnerBtn.textContent = "🏆";
   // Attach the event handler ONCE, here:
-  winnerBtn.addEventListener("click", () => declareWinner(playerName));
+  // winnerBtn.addEventListener("click", () => declareWinner(playerName));
+  winnerBtn.addEventListener("click", (e) => {
+    // Stop event propagation to prevent the tile's click handler from firing
+    e.stopPropagation();
+    declareWinner(playerName);
+  });
 
   header.appendChild(nameSpan);
   header.appendChild(winnerBtn);
@@ -657,23 +662,42 @@ function createPlayerTile(playerName) {
   commanderBtn.title = "Commander Damage";
   commanderBtn.setAttribute("aria-label", "Commander Damage");
   commanderBtn.textContent = "⚔️";
-  commanderBtn.addEventListener("click", () =>
-    openCommanderDamageModal(playerName)
-  );
+  // commanderBtn.addEventListener("click", () =>
+  //   openCommanderDamageModal(playerName)
+  // );
+  commanderBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openCommanderDamageModal(playerName);
+  });
 
   const poisonBtn = document.createElement("button");
   poisonBtn.className = "poison-btn";
   poisonBtn.title = "Poison Counters";
   poisonBtn.setAttribute("aria-label", "Poison Counters");
   poisonBtn.innerHTML = `<span class="poison-icon">🐍</span><span class="poison-count">${poison}</span>`;
-  poisonBtn.addEventListener("click", () => openPoisonModal(playerName));
+  // poisonBtn.addEventListener("click", () => openPoisonModal(playerName));
+  poisonBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openPoisonModal(playerName);
+  });
 
   const diedBtn = document.createElement("button");
   diedBtn.className = "mark-died-btn";
   diedBtn.title = "Mark as Died";
   diedBtn.setAttribute("aria-label", "Mark as Died");
   diedBtn.textContent = "☠️";
-  diedBtn.addEventListener("click", async () => {
+  // diedBtn.addEventListener("click", async () => {
+  //   if (tile.classList.contains("player-died")) return;
+  //   const confirmed = await showConfirm(
+  //     ``,
+  //     `Mark ${playerName} as died?`
+  //   );
+  //   if (confirmed) {
+  //     markPlayerAsDied(playerName);
+  //   }
+  // });
+  diedBtn.addEventListener("click", async (e) => {
+  e.stopPropagation();
     if (tile.classList.contains("player-died")) return;
     const confirmed = await showConfirm(
       ``,
@@ -690,24 +714,64 @@ function createPlayerTile(playerName) {
   
   tile.addEventListener("mousedown", handleTileMouseDown);
   tile.addEventListener("touchstart", handleTileTouchStart, { passive: false });
+
+  // Add a click handler for showing the remove option
+  tile.addEventListener("click", (e) => {
+    // Only handle clicks, not long presses that started drag mode
+    if (longPressActive || gameEnded) return;
+    
+    // Show context menu with just Remove option
+    const contextMenu = document.createElement("div");
+    contextMenu.id = "tile-context-menu";
+    contextMenu.className = "tile-context-menu";
+    
+    const removeItem = document.createElement("button");
+    removeItem.className = "context-menu-item remove-item";
+    removeItem.innerHTML = "❌ Remove";
+    removeItem.addEventListener("click", () => {
+      confirmRemovePlayer(playerName);
+      contextMenu.remove();
+    });
+    
+    contextMenu.appendChild(removeItem);
+    document.body.appendChild(contextMenu);
+    
+    // Position near the clicked tile
+    const tileRect = tile.getBoundingClientRect();
+    contextMenu.style.left = `${tileRect.right - 10}px`;
+    contextMenu.style.top = `${tileRect.top + 10}px`;
+    
+    // Close menu when clicking elsewhere
+    setTimeout(() => {
+      document.addEventListener("click", function closeMenu(e) {
+        if (!contextMenu.contains(e.target)) {
+          contextMenu.remove();
+          document.removeEventListener("click", closeMenu);
+        }
+      });
+    }, 10);
+  });
   
   function handleTileMouseDown(e) {
     if (gameEnded) return;
     
     pressTimer = setTimeout(() => {
       longPressActive = true;
-      showTileContextMenu(tile, playerName, e.clientX, e.clientY);
+      // showTileContextMenu(tile, playerName, e.clientX, e.clientY);
+      enableDragMode(tile, playerName);
     }, 300); // 500ms hold time
   }
   
   function handleTileTouchStart(e) {
     if (gameEnded) return;
     e.preventDefault();
+    e.stopPropagation(); // Stop event propagation
     
     const touch = e.touches[0];
     pressTimer = setTimeout(() => {
       longPressActive = true;
-      showTileContextMenu(tile, playerName, touch.clientX, touch.clientY);
+      // showTileContextMenu(tile, playerName, touch.clientX, touch.clientY);
+      enableDragMode(tile, playerName);
     }, 500); // 500ms hold time
   }
   
@@ -830,23 +894,60 @@ function enableDragMode(tile, playerName) {
   // Get all player tiles (except the one being dragged)
   const allTiles = document.querySelectorAll(".player-tile:not(.dragging)");
   
-  // Add click handler to all other tiles
-  const clickHandler = function(e) {
-    const targetTile = e.currentTarget;
-    const targetPlayer = targetTile.dataset.player;
+  // // Add click handler to all other tiles
+  // const clickHandler = function(e) {
+  //   const targetTile = e.currentTarget;
+  //   const targetPlayer = targetTile.dataset.player;
     
-    // Swap players
-    reorderPlayers(playerName, targetPlayer);
-    updateCurrentGamePlayersUI();
+  //   // Swap players
+  //   reorderPlayers(playerName, targetPlayer);
+  //   updateCurrentGamePlayersUI();
     
-    // Clean up
-    disableDragMode();
-  };
+  //   // Clean up
+  //   disableDragMode();
+  // };
   
   allTiles.forEach(otherTile => {
     otherTile.addEventListener("click", clickHandler);
     otherTile.classList.add("drop-target");
   });
+
+  // Add a simple tap/click handler for showing the remove option
+  tile.addEventListener("click", (e) => {
+  // Only handle clicks, not long presses that started drag mode
+  if (longPressActive || gameEnded) return;
+  
+  // Show context menu with just Remove option
+  const contextMenu = document.createElement("div");
+  contextMenu.id = "tile-context-menu";
+  contextMenu.className = "tile-context-menu";
+  
+  const removeItem = document.createElement("button");
+  removeItem.className = "context-menu-item remove-item";
+  removeItem.innerHTML = "❌ Remove";
+  removeItem.addEventListener("click", () => {
+    confirmRemovePlayer(playerName);
+    contextMenu.remove();
+  });
+  
+  contextMenu.appendChild(removeItem);
+  document.body.appendChild(contextMenu);
+  
+  // Position near the clicked tile
+  const tileRect = tile.getBoundingClientRect();
+  contextMenu.style.left = `${tileRect.right - 10}px`;
+  contextMenu.style.top = `${tileRect.top + 10}px`;
+  
+  // Close menu when clicking elsewhere
+  setTimeout(() => {
+    document.addEventListener("click", function closeMenu(e) {
+      if (!contextMenu.contains(e.target)) {
+        contextMenu.remove();
+        document.removeEventListener("click", closeMenu);
+      }
+    });
+  }, 10);
+});
   
   // Add cancel button
   const cancelBtn = document.createElement("button");

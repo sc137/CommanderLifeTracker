@@ -1362,6 +1362,20 @@ function renderSettingsPlayersList() {
     label.className = "settings-default-label";
     label.textContent = player === defaultPlayer ? "Default" : "";
 
+    // Add unset button that only appears for the default player
+    if (player === defaultPlayer) {
+      const unsetBtn = document.createElement("button");
+      unsetBtn.className = "unset-default-btn";
+      unsetBtn.title = "Remove default player";
+      unsetBtn.innerHTML = "❌";
+      unsetBtn.addEventListener("click", () => {
+        localStorage.removeItem(DEFAULT_PLAYER_KEY);
+        renderSettingsPlayersList(); // Update UI
+      });
+      label.appendChild(document.createTextNode(" "));
+      label.appendChild(unsetBtn);
+    }
+
     const delBtn = document.createElement("button");
     delBtn.className = "delete-player-btn";
     delBtn.title = "Delete player";

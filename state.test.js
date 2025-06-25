@@ -66,6 +66,14 @@ describe('State Management', () => {
         expect(state.players).toEqual(['Player 2', 'Player 1']);
     });
 
+    test('should reorder players when moving later to earlier position', () => {
+        addPlayerToGame('Player A');
+        addPlayerToGame('Player B');
+        addPlayerToGame('Player C');
+        reorderPlayers('Player C', 'Player A');
+        expect(state.players).toEqual(['Player A', 'Player C', 'Player B']);
+    });
+
     test('should log a game', () => {
         logGame('Player 1', ['Player 1', 'Player 2'], { 'Player 1': 40, 'Player 2': 30 });
         const log = getGameLog();

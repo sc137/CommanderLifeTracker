@@ -20,7 +20,13 @@ function createPlayerTile(playerName) {
     const { life, poison, dead } = state.playerState[playerName];
 
     const tile = document.createElement("div");
-    tile.className = `player-tile ${dead ? 'player-died' : ''}`;
+    const classes = ["player-tile"];
+    if (dead) classes.push("player-died");
+    if (state.gameEnded) classes.push("game-ended");
+    if (state.gameEnded && state.winner === playerName) {
+        classes.push("winner-tile");
+    }
+    tile.className = classes.join(" ");
     tile.dataset.player = playerName;
     tile.setAttribute("draggable", "true");
 
@@ -94,7 +100,7 @@ function createPlayerTile(playerName) {
     tile.appendChild(lifeSection);
     tile.appendChild(actions);
 
-    if (dead) {
+    if (dead || state.gameEnded) {
         tile.querySelectorAll("button").forEach((btn) => (btn.disabled = true));
     }
 

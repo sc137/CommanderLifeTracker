@@ -75,4 +75,25 @@ describe('UI Management', () => {
         const btn = document.getElementById('add-player-btn');
         expect(btn.style.display).toBe('none');
     });
+
+    test('should display winner state after reload', () => {
+        state.players = ['Alice', 'Bob'];
+        state.playerState = {
+            'Alice': { life: 20, poison: 0, dead: false },
+            'Bob': { life: 15, poison: 0, dead: false },
+        };
+        state.gameEnded = true;
+        state.winner = 'Alice';
+        updateCurrentGamePlayersUI();
+        const tiles = document.getElementById('player-tiles').children;
+        const aliceTile = Array.from(tiles).find(t => t.dataset.player === 'Alice');
+        const bobTile = Array.from(tiles).find(t => t.dataset.player === 'Bob');
+        expect(aliceTile.classList.contains('winner-tile')).toBe(true);
+        expect(aliceTile.classList.contains('game-ended')).toBe(true);
+        expect(bobTile.classList.contains('winner-tile')).toBe(false);
+        expect(bobTile.classList.contains('game-ended')).toBe(true);
+        Array.from(aliceTile.querySelectorAll('button')).forEach(btn => {
+            expect(btn.disabled).toBe(true);
+        });
+    });
 });

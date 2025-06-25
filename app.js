@@ -708,12 +708,42 @@ function createPlayerTile(playerName) {
     }
   });
 
-  // Add long-press event handlers for both removal and reordering
-  let pressTimer;
+  // Simplified long-press handling
+  let pressTimer = null;
   let longPressActive = false;
-  
+
+  function handleTileMouseDown(e) {
+    if (gameEnded) return;
+    
+    pressTimer = setTimeout(() => {
+      longPressActive = true;
+      enableDragMode(tile, playerName);
+    }, 300);
+  }
+
+  function handleTileTouchStart(e) {
+    if (gameEnded) return;
+    e.preventDefault();
+    
+    pressTimer = setTimeout(() => {
+      longPressActive = true;
+      enableDragMode(tile, playerName);
+    }, 500);
+  }
+
+  function clearPressTimer() {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+  }
+
   tile.addEventListener("mousedown", handleTileMouseDown);
   tile.addEventListener("touchstart", handleTileTouchStart, { passive: false });
+  
+  tile.addEventListener("mouseup", clearPressTimer);
+  tile.addEventListener("mouseleave", clearPressTimer);
+  tile.addEventListener("touchend", clearPressTimer);
+  tile.addEventListener("touchcancel", clearPressTimer);
+
 
   // Add a click handler for showing the remove option
   tile.addEventListener("click", (e) => {
@@ -762,34 +792,48 @@ function createPlayerTile(playerName) {
     }, 300); // 500ms hold time
   }
   
+  // function handleTileTouchStart(e) {
+  //   if (gameEnded) return;
+  //   e.preventDefault();
+  //   e.stopPropagation(); // Stop event propagation
+    
+  //   const touch = e.touches[0];
+  //   pressTimer = setTimeout(() => {
+  //     longPressActive = true;
+  //     // showTileContextMenu(tile, playerName, touch.clientX, touch.clientY);
+  //     enableDragMode(tile, playerName);
+  //   }, 500); // 500ms hold time
+  // }
   function handleTileTouchStart(e) {
     if (gameEnded) return;
     e.preventDefault();
-    e.stopPropagation(); // Stop event propagation
     
     const touch = e.touches[0];
     pressTimer = setTimeout(() => {
       longPressActive = true;
-      // showTileContextMenu(tile, playerName, touch.clientX, touch.clientY);
       enableDragMode(tile, playerName);
-    }, 500); // 500ms hold time
+    }, 500);
   }
   
   // Cancel the timer if the user releases before the long press threshold
-  tile.addEventListener("mouseup", () => {
-    clearTimeout(pressTimer);
-    longPressActive = false;
-  });
+  // tile.addEventListener("mouseup", () => {
+  //   clearTimeout(pressTimer);
+  //   longPressActive = false;
+  // });
   
-  tile.addEventListener("touchend", () => {
-    clearTimeout(pressTimer);
-    longPressActive = false;
-  });
+  // tile.addEventListener("touchend", () => {
+  //   clearTimeout(pressTimer);
+  //   longPressActive = false;
+  // });
   
-  tile.addEventListener("mouseleave", () => {
-    clearTimeout(pressTimer);
-    longPressActive = false;
-  });
+  // tile.addEventListener("mouseleave", () => {
+  //   clearTimeout(pressTimer);
+  //   longPressActive = false;
+  // });
+  tile.addEventListener("touchend", clearLongPressState);
+  tile.addEventListener("touchcancel", clearLongPressState);
+  tile.addEventListener("mouseup", clearLongPressState);
+  tile.addEventListener("mouseleave", clearLongPressState);
 
   actions.appendChild(commanderBtn);
   actions.appendChild(poisonBtn);
@@ -881,6 +925,100 @@ async function confirmRemovePlayer(playerName) {
   }
 }
 
+// function enableDragMode(tile, playerName) {
+//   // Add visual indication that tile is being moved
+//   tile.classList.add("dragging");
+  
+//   // Create overlay message
+//   const moveOverlay = document.createElement("div");
+//   moveOverlay.className = "move-overlay";
+//   moveOverlay.textContent = "Tap another player to swap positions";
+//   document.body.appendChild(moveOverlay);
+  
+//   // Get all player tiles (except the one being dragged)
+//   const allTiles = document.querySelectorAll(".player-tile:not(.dragging)");
+  
+//   // // Add click handler to all other tiles
+//   // const clickHandler = function(e) {
+//   //   const targetTile = e.currentTarget;
+//   //   const targetPlayer = targetTile.dataset.player;
+    
+//   //   // Swap players
+//   //   reorderPlayers(playerName, targetPlayer);
+//   //   updateCurrentGamePlayersUI();
+    
+//   //   // Clean up
+//   //   disableDragMode();
+//   // };
+  
+//   allTiles.forEach(otherTile => {
+//     otherTile.addEventListener("click", clickHandler);
+//     otherTile.classList.add("drop-target");
+//   });
+
+//   // Add a simple tap/click handler for showing the remove option
+//   tile.addEventListener("click", (e) => {
+//   // Only handle clicks, not long presses that started drag mode
+//   if (longPressActive || gameEnded) return;
+  
+//   // Show context menu with just Remove option
+//   const contextMenu = document.createElement("div");
+//   contextMenu.id = "tile-context-menu";
+//   contextMenu.className = "tile-context-menu";
+  
+//   const removeItem = document.createElement("button");
+//   removeItem.className = "context-menu-item remove-item";
+//   removeItem.innerHTML = "❌ Remove";
+//   removeItem.addEventListener("click", () => {
+//     confirmRemovePlayer(playerName);
+//     contextMenu.remove();
+//   });
+  
+//   contextMenu.appendChild(removeItem);
+//   document.body.appendChild(contextMenu);
+  
+//   // Position near the clicked tile
+//   const tileRect = tile.getBoundingClientRect();
+//   contextMenu.style.left = `${tileRect.right - 10}px`;
+//   contextMenu.style.top = `${tileRect.top + 10}px`;
+  
+//   // Close menu when clicking elsewhere
+//   setTimeout(() => {
+//     document.addEventListener("click", function closeMenu(e) {
+//       if (!contextMenu.contains(e.target)) {
+//         contextMenu.remove();
+//         document.removeEventListener("click", closeMenu);
+//       }
+//     });
+//   }, 10);
+// });
+  
+//   // Add cancel button
+//   const cancelBtn = document.createElement("button");
+//   cancelBtn.className = "cancel-move-btn";
+//   cancelBtn.textContent = "Cancel";
+//   cancelBtn.addEventListener("click", disableDragMode);
+//   document.body.appendChild(cancelBtn);
+  
+//   // Function to disable drag mode
+//   function disableDragMode() {
+//     tile.classList.remove("dragging");
+//     allTiles.forEach(otherTile => {
+//       otherTile.removeEventListener("click", clickHandler);
+//       otherTile.classList.remove("drop-target");
+//     });
+//     moveOverlay.remove();
+//     cancelBtn.remove();
+//   }
+  
+//   // Cancel drag mode when clicking outside
+//   document.addEventListener("click", function cancelDrag(e) {
+//     if (!e.target.closest(".player-tile") && !e.target.closest(".cancel-move-btn")) {
+//       disableDragMode();
+//       document.removeEventListener("click", cancelDrag);
+//     }
+//   });
+// }
 function enableDragMode(tile, playerName) {
   // Add visual indication that tile is being moved
   tile.classList.add("dragging");
@@ -894,60 +1032,24 @@ function enableDragMode(tile, playerName) {
   // Get all player tiles (except the one being dragged)
   const allTiles = document.querySelectorAll(".player-tile:not(.dragging)");
   
-  // // Add click handler to all other tiles
-  // const clickHandler = function(e) {
-  //   const targetTile = e.currentTarget;
-  //   const targetPlayer = targetTile.dataset.player;
+  // Define the click handler properly
+  function clickHandler(e) {
+    const targetTile = e.currentTarget;
+    const targetPlayer = targetTile.dataset.player;
     
-  //   // Swap players
-  //   reorderPlayers(playerName, targetPlayer);
-  //   updateCurrentGamePlayersUI();
+    // Swap players
+    reorderPlayers(playerName, targetPlayer);
+    updateCurrentGamePlayersUI();
     
-  //   // Clean up
-  //   disableDragMode();
-  // };
+    // Clean up
+    disableDragMode();
+  }
   
+  // Add click handler to all other tiles
   allTiles.forEach(otherTile => {
     otherTile.addEventListener("click", clickHandler);
     otherTile.classList.add("drop-target");
   });
-
-  // Add a simple tap/click handler for showing the remove option
-  tile.addEventListener("click", (e) => {
-  // Only handle clicks, not long presses that started drag mode
-  if (longPressActive || gameEnded) return;
-  
-  // Show context menu with just Remove option
-  const contextMenu = document.createElement("div");
-  contextMenu.id = "tile-context-menu";
-  contextMenu.className = "tile-context-menu";
-  
-  const removeItem = document.createElement("button");
-  removeItem.className = "context-menu-item remove-item";
-  removeItem.innerHTML = "❌ Remove";
-  removeItem.addEventListener("click", () => {
-    confirmRemovePlayer(playerName);
-    contextMenu.remove();
-  });
-  
-  contextMenu.appendChild(removeItem);
-  document.body.appendChild(contextMenu);
-  
-  // Position near the clicked tile
-  const tileRect = tile.getBoundingClientRect();
-  contextMenu.style.left = `${tileRect.right - 10}px`;
-  contextMenu.style.top = `${tileRect.top + 10}px`;
-  
-  // Close menu when clicking elsewhere
-  setTimeout(() => {
-    document.addEventListener("click", function closeMenu(e) {
-      if (!contextMenu.contains(e.target)) {
-        contextMenu.remove();
-        document.removeEventListener("click", closeMenu);
-      }
-    });
-  }, 10);
-});
   
   // Add cancel button
   const cancelBtn = document.createElement("button");
@@ -965,6 +1067,7 @@ function enableDragMode(tile, playerName) {
     });
     moveOverlay.remove();
     cancelBtn.remove();
+    longPressActive = false; // Reset the long press state
   }
   
   // Cancel drag mode when clicking outside
@@ -1724,6 +1827,13 @@ document
 //   }
 //   updateAddPlayerBtnVisibility(); // Always update button visibility
 // });
+
+tile.addEventListener("touchmove", (e) => {
+  // If we're timing a long press, prevent the default scroll
+  if (pressTimer) {
+    e.preventDefault();
+  }
+}, { passive: false });
 
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("modal-overlay").hidden = true;

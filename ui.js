@@ -1,16 +1,19 @@
-
 import { state, saveState, reorderPlayers, ensurePlayerState, getGameLog, deleteGameLogEntry, getSavedPlayers, getDefaultPlayer, setDefaultPlayer, removePlayer } from './state.js';
 
-const modalOverlay = document.getElementById("modal-overlay");
-const addPlayerModal = document.getElementById("add-player-modal");
-const newPlayerModal = document.getElementById("new-player-modal");
-const aboutModal = document.getElementById("about-modal");
-const gameLogModal = document.getElementById("game-log-modal");
-const settingsModal = document.getElementById("settings-modal");
-const commanderDamageModal = document.getElementById("commander-damage-modal");
-const poisonModal = document.getElementById("poison-modal");
-const confirmModal = document.getElementById("confirm-modal");
-const newPlayerInput = document.getElementById("new-player-input");
+let modalOverlay, addPlayerModal, newPlayerModal, aboutModal, gameLogModal, settingsModal, commanderDamageModal, poisonModal, confirmModal, newPlayerInput;
+
+function initUI() {
+    modalOverlay = document.getElementById("modal-overlay");
+    addPlayerModal = document.getElementById("add-player-modal");
+    newPlayerModal = document.getElementById("new-player-modal");
+    aboutModal = document.getElementById("about-modal");
+    gameLogModal = document.getElementById("game-log-modal");
+    settingsModal = document.getElementById("settings-modal");
+    commanderDamageModal = document.getElementById("commander-damage-modal");
+    poisonModal = document.getElementById("poison-modal");
+    confirmModal = document.getElementById("confirm-modal");
+    newPlayerInput = document.getElementById("new-player-input");
+}
 
 function createPlayerTile(playerName) {
     ensurePlayerState(playerName);
@@ -316,6 +319,7 @@ function updateAddPlayerBtnVisibility() {
 }
 
 export {
+    initUI,
     createPlayerTile,
     updateCurrentGamePlayersUI,
     renderSavedPlayersList,

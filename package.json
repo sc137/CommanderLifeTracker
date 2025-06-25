@@ -1,0 +1,28 @@
+{
+  "name": "commanderlifetracker",
+  "version": "1.0.0",
+  "description": "Track your life totals when playing Magic the Gathering Commander (aka EDH).",
+  "main": "app.js",
+  "scripts": {
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sc137/CommanderLifeTracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/sc137/CommanderLifeTracker/issues"
+  },
+  "homepage": "https://github.com/sc137/CommanderLifeTracker#readme",
+  "devDependencies": {
+    "jest": "^30.0.3",
+    "jest-environment-jsdom": "^30.0.2",
+    "jest-environment-jsdom-global": "^4.0.0",
+    "text-encoding": "^0.7.0",
+    "whatwg-url": "^14.2.0"
+  }
+}

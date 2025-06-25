@@ -1,9 +1,9 @@
-
-import { loadState, getDefaultPlayer, addPlayerToGame } from './state.js';
-import { updateCurrentGamePlayersUI, updateAddPlayerBtnVisibility } from './ui.js';
+import { loadState, getDefaultPlayer, addPlayerToGame, state } from './state.js';
+import { initUI, updateCurrentGamePlayersUI, updateAddPlayerBtnVisibility } from './ui.js';
 import { initEventListeners } from './events.js';
 
 document.addEventListener("DOMContentLoaded", () => {
+    initUI();
     loadState();
     updateCurrentGamePlayersUI();
     updateAddPlayerBtnVisibility();

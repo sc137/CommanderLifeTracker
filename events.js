@@ -8,6 +8,7 @@ import {
     savePlayer,
     setDefaultPlayer,
     getDefaultPlayer,
+    getSavedPlayers,
     removePlayer,
     logGame,
     deleteGameLogEntry,
@@ -25,9 +26,8 @@ import {
     updateAddPlayerBtnVisibility,
 } from "./ui.js";
 
-const newPlayerInput = document.getElementById("new-player-input");
-
 function handleSaveNewPlayer() {
+    const newPlayerInput = document.getElementById("new-player-input");
     const name = newPlayerInput.value.trim();
 
     if (!name) {
@@ -150,6 +150,10 @@ function openCommanderDamageModal(playerName) {
         const minusBtn = document.createElement("button");
         minusBtn.className = "commander-damage-btn";
         minusBtn.textContent = "-";
+        minusBtn.addEventListener("click", () => {
+            changeCommanderDamage(playerName, opponent, -1);
+            openCommanderDamageModal(playerName);
+        });
 
         const value = document.createElement("span");
         value.className = "commander-damage-value";
@@ -163,6 +167,10 @@ function openCommanderDamageModal(playerName) {
         const plusBtn = document.createElement("button");
         plusBtn.className = "commander-damage-btn";
         plusBtn.textContent = "+";
+        plusBtn.addEventListener("click", () => {
+            changeCommanderDamage(playerName, opponent, 1);
+            openCommanderDamageModal(playerName);
+        });
 
         controls.appendChild(minusBtn);
         controls.appendChild(value);
@@ -203,7 +211,34 @@ async function markPlayerAsDied(playerName) {
     saveState();
 }
 
+async function startNewGame() {
+    const confirmed = await showConfirm(
+        "This will clear the current game.",
+        "Start a new game?"
+    );
+    if (!confirmed) return;
+
+    state.players = [];
+    state.playerState = {};
+    state.gameEnded = false;
+    state.winner = null;
+    state.commanderDamage = {};
+
+    const defaultPlayer = getDefaultPlayer();
+    if (defaultPlayer) {
+        addPlayerToGame(defaultPlayer);
+    }
+
+    saveState();
+    updateCurrentGamePlayersUI();
+    updateAddPlayerBtnVisibility();
+}
+
 function initEventListeners() {
+    const newPlayerInput = document.getElementById("new-player-input");
+
+    document.getElementById("new-game-btn").addEventListener("click", startNewGame);
+
     document.getElementById("add-player-btn").addEventListener("click", () => {
         renderSavedPlayersList();
         showModal("add-player-modal");
@@ -436,4 +471,4 @@ function initEventListeners() {
     });
 }
 
-export { initEventListeners };
+export { initEventListeners, handleSaveNewPlayer };

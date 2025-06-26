@@ -1,188 +1,297 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Commander Life Tracker</title>
+        <!-- Manifest for PWA support -->
+        <link rel="manifest" href="manifest.json" />
+        <link rel="icon" href="resources/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="resources/logo.png" />
+        <!-- Link to CSS -->
+        <link rel="stylesheet" href="style.css" />
+        <script type="module" src="app.js"></script>
+    </head>
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Commander Life Tracker</title>
-    <!-- Manifest for PWA support -->
-    <link rel="manifest" href="manifest.json" />
-    <!-- Link to CSS -->
-    <link rel="stylesheet" href="style.css" />
-    <script type="module" src="app.js"></script>
-</head>
+    <body>
+        <header class="app-header">
+            <button
+                id="hamburger"
+                aria-label="Open menu"
+                class="hamburger"
+                tabindex="0"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <h1 class="app-title">Commander Life Tracker</h1>
+        </header>
 
-<body>
-    <header class="app-header">
-        <button id="hamburger" aria-label="Open menu" class="hamburger" tabindex="0">
-            <span></span>
-            <span></span>
-            <span></span>
-        </button>
-        <h1 class="app-title">Commander Life Tracker</h1>
-    </header>
-
-    <!-- Hamburger Menu Overlay -->
-    <div id="menu-overlay" class="menu-overlay" hidden>
-        <nav class="menu-panel" role="menu">
-            <a href="#" id="view-log-link" class="menu-link" role="menuitem">View Game Log</a>
-            <a href="#" id="settings-link" class="menu-link" role="menuitem">Settings</a>
-            <a href="#" id="about-link" class="menu-link" role="menuitem">About</a>
-        </nav>
-    </div>
-
-    <main>
-        <div id="player-tiles" class="player-tiles-container">
-            <!-- Player tiles will be dynamically inserted here -->
+        <!-- Hamburger Menu Overlay -->
+        <div id="menu-overlay" class="menu-overlay" hidden>
+            <nav class="menu-panel" role="menu">
+                <a href="#" id="view-log-link" class="menu-link" role="menuitem"
+                    >View Game Log</a
+                >
+                <a href="#" id="settings-link" class="menu-link" role="menuitem"
+                    >Settings</a
+                >
+                <a href="#" id="about-link" class="menu-link" role="menuitem"
+                    >About</a
+                >
+            </nav>
         </div>
-        <div class="game-controls">
-            <button id="new-game-btn" class="primary-btn">New Game</button>
-            <button id="add-player-btn" class="secondary-btn">+Player</button>
-        </div>
-    </main>
 
-    <!-- Modal overlay (initially hidden) -->
-    <div id="modal-overlay" class="modal-overlay" hidden>
-        <div id="modal-content" class="modal-content">
-            <div id="add-player-modal" class="modal add-player-modal" hidden>
-                <h2 class="modal-title">Add Player</h2>
-                <div class="player-list-scroll" id="saved-players-list">
-                    <!-- Saved players will be dynamically inserted here -->
-                </div>
-                <div class="modal-actions">
-                    <button id="new-player-btn" class="secondary-btn">+New Player</button>
-                    <button id="add-player-done-btn" class="primary-btn">Add</button>
-                    <button id="close-add-player-btn" class="secondary-btn">Cancel</button>
-                </div>
+        <main>
+            <div id="player-tiles" class="player-tiles-container">
+                <!-- Player tiles will be dynamically inserted here -->
             </div>
-            <div id="new-player-modal" class="modal new-player-modal" hidden>
-                <h2 class="modal-title">Enter New Player Name</h2>
-                <input id="new-player-input" class="modal-input" type="text" placeholder="Player name"
-                    autocomplete="off" maxlength="24" />
-                <div class="modal-actions">
-                    <button id="save-new-player-btn" class="primary-btn">Save</button>
-                    <button id="cancel-new-player-btn" class="secondary-btn">
-                        Cancel
-                    </button>
-                </div>
+            <div class="game-controls">
+                <button id="new-game-btn" class="primary-btn">New Game</button>
+                <button id="add-player-btn" class="secondary-btn">
+                    +Player
+                </button>
             </div>
-            <div id="commander-damage-modal" class="modal commander-damage-modal" hidden>
-                <h2 class="modal-title" id="commander-damage-title">
-                    Commander Damage
-                </h2>
-                <div class="commander-damage-list" id="commander-damage-list">
-                    <!-- Commander damage entries will be injected here -->
-                </div>
-                <div class="modal-actions">
-                    <button id="close-commander-damage-btn" class="primary-btn">
-                        Close
-                    </button>
-                </div>
-            </div>
-            <div id="poison-modal" class="modal poison-modal" hidden>
-                <h2 class="modal-title" id="poison-modal-title">Poison Counters</h2>
-                <div class="poison-counter-controls">
-                    <button id="poison-minus-btn" class="poison-counter-btn" aria-label="Decrease Poison">
-                        -
-                    </button>
-                    <span id="poison-count-display" class="poison-count-display">0</span>
-                    <button id="poison-plus-btn" class="poison-counter-btn" aria-label="Increase Poison">
-                        +
-                    </button>
-                </div>
-                <div class="modal-actions">
-                    <button id="close-poison-modal-btn" class="primary-btn">
-                        Close
-                    </button>
-                </div>
-            </div>
-            <div id="game-log-modal" class="modal game-log-modal" hidden>
-                <h2 class="modal-title">Game History</h2>
-                <div id="game-log-list" class="game-log-list">
-                    <!-- Game log entries will be injected here -->
-                </div>
-                <div class="modal-actions">
-                    <button id="close-game-log-btn" class="primary-btn">Close</button>
-                </div>
-            </div>
-            <div id="settings-modal" class="modal settings-modal" hidden>
-                <h2 class="modal-title">Settings</h2>
-                <div class="settings-section">
-                    <h3>Saved Players</h3>
-                    <div id="settings-players-list" class="settings-players-list">
-                        <!-- Player list will be injected here -->
+        </main>
+
+        <!-- Modal overlay (initially hidden) -->
+        <div id="modal-overlay" class="modal-overlay" hidden>
+            <div id="modal-content" class="modal-content">
+                <div
+                    id="add-player-modal"
+                    class="modal add-player-modal"
+                    hidden
+                >
+                    <h2 class="modal-title">Add Player</h2>
+                    <div class="player-list-scroll" id="saved-players-list">
+                        <!-- Saved players will be dynamically inserted here -->
                     </div>
-                    <div class="settings-add-btn-row">
-                        <button id="settings-add-player-btn" class="mini-btn" type="button">+New Player</button>
+                    <div class="modal-actions">
+                        <button id="new-player-btn" class="secondary-btn">
+                            +New Player
+                        </button>
+                        <button id="add-player-done-btn" class="primary-btn">
+                            Add
+                        </button>
+                        <button id="close-add-player-btn" class="secondary-btn">
+                            Cancel
+                        </button>
                     </div>
                 </div>
-                <div class="modal-actions">
-                    <button id="close-settings-btn" class="primary-btn">Close</button>
+                <div
+                    id="new-player-modal"
+                    class="modal new-player-modal"
+                    hidden
+                >
+                    <h2 class="modal-title">Enter New Player Name</h2>
+                    <input
+                        id="new-player-input"
+                        class="modal-input"
+                        type="text"
+                        placeholder="Player name"
+                        autocomplete="off"
+                        maxlength="24"
+                    />
+                    <div class="modal-actions">
+                        <button id="save-new-player-btn" class="primary-btn">
+                            Save
+                        </button>
+                        <button
+                            id="cancel-new-player-btn"
+                            class="secondary-btn"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+                <div
+                    id="commander-damage-modal"
+                    class="modal commander-damage-modal"
+                    hidden
+                >
+                    <h2 class="modal-title" id="commander-damage-title">
+                        Commander Damage
+                    </h2>
+                    <div
+                        class="commander-damage-list"
+                        id="commander-damage-list"
+                    >
+                        <!-- Commander damage entries will be injected here -->
+                    </div>
+                    <div class="modal-actions">
+                        <button
+                            id="close-commander-damage-btn"
+                            class="primary-btn"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <div id="poison-modal" class="modal poison-modal" hidden>
+                    <h2 class="modal-title" id="poison-modal-title">
+                        Poison Counters
+                    </h2>
+                    <div class="poison-counter-controls">
+                        <button
+                            id="poison-minus-btn"
+                            class="poison-counter-btn"
+                            aria-label="Decrease Poison"
+                        >
+                            -
+                        </button>
+                        <span
+                            id="poison-count-display"
+                            class="poison-count-display"
+                            >0</span
+                        >
+                        <button
+                            id="poison-plus-btn"
+                            class="poison-counter-btn"
+                            aria-label="Increase Poison"
+                        >
+                            +
+                        </button>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="close-poison-modal-btn" class="primary-btn">
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <div id="game-log-modal" class="modal game-log-modal" hidden>
+                    <h2 class="modal-title">Game History</h2>
+                    <div id="game-log-list" class="game-log-list">
+                        <!-- Game log entries will be injected here -->
+                    </div>
+                    <div class="modal-actions">
+                        <button id="close-game-log-btn" class="primary-btn">
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <div id="settings-modal" class="modal settings-modal" hidden>
+                    <h2 class="modal-title">Settings</h2>
+                    <div class="settings-section">
+                        <h3>Saved Players</h3>
+                        <div
+                            id="settings-players-list"
+                            class="settings-players-list"
+                        >
+                            <!-- Player list will be injected here -->
+                        </div>
+                        <div class="settings-add-btn-row">
+                            <button
+                                id="settings-add-player-btn"
+                                class="mini-btn"
+                                type="button"
+                            >
+                                +New Player
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="close-settings-btn" class="primary-btn">
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <div id="about-modal" class="modal about-modal" hidden>
+                    <h2 class="modal-title">About</h2>
+                    <div class="about-content">
+                        <p>
+                            Commander Life Tracker v0.4<br />
+                            Created by
+                            <a href="https://cantus.us/" target="_blank"
+                                >Sable Cantus</a
+                            ><br />
+                            <br />
+                            Track life, poison, and commander damage for your
+                            Commander games.<br />
+                            <br />
+                            <a
+                                href="https://github.com/sc137/CommanderLifeTracker"
+                                target="_blank"
+                                >🚀 View this on Github</a
+                            >
+                        </p>
+                    </div>
+                    <div class="modal-actions">
+                        <button id="close-about-btn" class="primary-btn">
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <div id="confirm-modal" class="modal confirm-modal" hidden>
+                    <div class="modal-title" id="confirm-modal-title">
+                        Confirm
+                    </div>
+                    <div class="modal-message" id="confirm-modal-message"></div>
+                    <div class="modal-actions">
+                        <button id="confirm-modal-cancel" class="secondary-btn">
+                            Cancel
+                        </button>
+                        <button id="confirm-modal-ok" class="primary-btn">
+                            OK
+                        </button>
+                    </div>
                 </div>
             </div>
-            <div id="about-modal" class="modal about-modal" hidden>
-                <h2 class="modal-title">About</h2>
-                <div class="about-content">
-                    <p>
-                        Commander Life Tracker v0.3a<br>
-                        Created by <a href="https://cantus.us/" target="_blank">Sable Cantus</a><br>
-                        <br>
-                        Track life, poison, and commander damage for your Commander games.<br>
-                        <br>
-                        <a href="https://github.com/sc137/CommanderLifeTracker" target="_blank">🚀 View this on
-                            Github</a>
-                    </p>
-                </div>
-                <div class="modal-actions">
-                    <button id="close-about-btn" class="primary-btn">Close</button>
-                </div>
-            </div>
-            <div id="confirm-modal" class="modal confirm-modal" hidden>
-                <div class="modal-title" id="confirm-modal-title">Confirm</div>
-                <div class="modal-message" id="confirm-modal-message"></div>
-                <div class="modal-actions">
-                    <button id="confirm-modal-cancel" class="secondary-btn">Cancel</button>
-                    <button id="confirm-modal-ok" class="primary-btn">OK</button>
-                </div>
-            </div>
-        </div> <!-- Closes modal-content -->
-    </div> <!-- Closes modal-overlay -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function () {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(reg => {
-                        console.log('Service Worker registered:', reg);
+            <!-- Closes modal-content -->
+        </div>
+        <!-- Closes modal-overlay -->
+        <script>
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", function () {
+                    navigator.serviceWorker
+                        .register("service-worker.js")
+                        .then((reg) => {
+                            console.log("Service Worker registered:", reg);
 
-                        // Listen for updates
-                        reg.onupdatefound = () => {
-                            const installingWorker = reg.installing;
-                            installingWorker.onstatechange = () => {
-                                if (installingWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        // New update available
-                                        console.log('New content is available; please refresh.');
-                                        // Optionally, show a UI prompt to reload
-                                    } else {
-                                        // Content cached for offline use
-                                        console.log('Content is cached for offline use.');
+                            // Listen for updates
+                            reg.onupdatefound = () => {
+                                const installingWorker = reg.installing;
+                                installingWorker.onstatechange = () => {
+                                    if (
+                                        installingWorker.state === "installed"
+                                    ) {
+                                        if (
+                                            navigator.serviceWorker.controller
+                                        ) {
+                                            // New update available
+                                            console.log(
+                                                "New content is available; please refresh.",
+                                            );
+                                            // Optionally, show a UI prompt to reload
+                                        } else {
+                                            // Content cached for offline use
+                                            console.log(
+                                                "Content is cached for offline use.",
+                                            );
+                                        }
                                     }
-                                }
+                                };
                             };
-                        };
-                    })
-                    .catch(err => {
-                        console.error('Service Worker registration failed:', err);
-                    });
+                        })
+                        .catch((err) => {
+                            console.error(
+                                "Service Worker registration failed:",
+                                err,
+                            );
+                        });
 
-                // Optional: Listen for controlling service worker changes
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('Service worker controlling this page has changed.');
-                    // Optionally, reload the page or notify the user
+                    // Optional: Listen for controlling service worker changes
+                    navigator.serviceWorker.addEventListener(
+                        "controllerchange",
+                        () => {
+                            console.log(
+                                "Service worker controlling this page has changed.",
+                            );
+                            // Optionally, reload the page or notify the user
+                        },
+                    );
                 });
-            });
-        }
-    </script>
-</body>
-
+            }
+        </script>
+    </body>
 </html>

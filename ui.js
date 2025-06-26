@@ -224,6 +224,7 @@ function renderGameLog() {
         .forEach((entry) => {
             const div = document.createElement("div");
             div.className = "game-log-entry";
+            div.dataset.logId = entry.id;
 
             const header = document.createElement("div");
             header.className = "game-log-header";
@@ -247,6 +248,7 @@ function renderGameLog() {
             delBtn.className = "delete-game-log-btn";
             delBtn.title = "Delete Game Log Entry";
             delBtn.innerHTML = "✖";
+            delBtn.dataset.logId = entry.id;
 
             div.appendChild(header);
             div.appendChild(details);

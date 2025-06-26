@@ -269,7 +269,15 @@ function showModal(modalId) {
             'button, [tabindex]:not([tabindex="-1"]), input, select, textarea, a[href]'
         );
         if (focusable) {
-            setTimeout(() => focusable.focus(), 50);
+            const standalone =
+                (window.matchMedia &&
+                    window.matchMedia('(display-mode: standalone)').matches) ||
+                window.navigator.standalone;
+            if (standalone) {
+                focusable.focus();
+            } else {
+                setTimeout(() => focusable.focus(), 50);
+            }
         }
         modal.setAttribute("aria-modal", "true");
         modal.setAttribute("role", "dialog");

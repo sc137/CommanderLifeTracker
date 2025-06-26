@@ -55,13 +55,20 @@ describe('UI Management', () => {
         expect(overlay.hidden).toBe(true);
     });
 
-    test('new player modal should focus input', () => {
+    test('new player modal should focus input after delay', () => {
         jest.useFakeTimers();
         showModal('new-player-modal');
         jest.advanceTimersByTime(60);
         const input = document.getElementById('new-player-input');
         expect(document.activeElement).toBe(input);
         jest.useRealTimers();
+    });
+
+    test('new player modal should focus input immediately in standalone mode', () => {
+        window.matchMedia = jest.fn().mockReturnValue({ matches: true });
+        showModal('new-player-modal');
+        const input = document.getElementById('new-player-input');
+        expect(document.activeElement).toBe(input);
     });
 
     test('should show an input error', () => {

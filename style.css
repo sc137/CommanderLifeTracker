@@ -431,7 +431,8 @@ main {
 
 .commander-damage-btn,
 .poison-btn,
-.mark-died-btn {
+.mark-died-btn,
+.remove-player-btn {
   background: #d8d8da;
   border: none;
   border-radius: 50%;
@@ -464,7 +465,9 @@ main {
 }
 
 .mark-died-btn:hover,
-.mark-died-btn:focus {
+.mark-died-btn:focus,
+.remove-player-btn:hover,
+.remove-player-btn:focus {
   background: #fee2e2;
   color: #e11d48;
   transform: scale(1.08);

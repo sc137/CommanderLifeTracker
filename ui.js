@@ -92,9 +92,16 @@ function createPlayerTile(playerName) {
     diedBtn.setAttribute("aria-label", "Mark as Died");
     diedBtn.textContent = "☠️";
 
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "remove-player-btn";
+    removeBtn.title = "Remove Player";
+    removeBtn.setAttribute("aria-label", "Remove Player");
+    removeBtn.textContent = "✖";
+
     actions.appendChild(commanderBtn);
     actions.appendChild(poisonBtn);
     actions.appendChild(diedBtn);
+    actions.appendChild(removeBtn);
 
     tile.appendChild(header);
     tile.appendChild(lifeSection);

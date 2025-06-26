@@ -97,6 +97,13 @@ function removePlayerFromGame(playerName) {
   const idx = state.players.indexOf(playerName);
   if (idx !== -1) {
     state.players.splice(idx, 1);
+    delete state.playerState[playerName];
+    delete state.commanderDamage[playerName];
+    for (const p of Object.keys(state.commanderDamage)) {
+      if (state.commanderDamage[p]) {
+        delete state.commanderDamage[p][playerName];
+      }
+    }
     saveState();
     return true;
   }

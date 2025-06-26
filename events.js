@@ -211,6 +211,17 @@ async function markPlayerAsDied(playerName) {
     saveState();
 }
 
+async function removePlayerFromGameUI(playerName) {
+    const confirmed = await showConfirm(
+        `Remove "${playerName}" from the current game?`,
+        "Remove Player"
+    );
+    if (!confirmed) return;
+    removePlayerFromGame(playerName);
+    updateCurrentGamePlayersUI();
+    updateAddPlayerBtnVisibility();
+}
+
 async function startNewGame() {
     const confirmed = await showConfirm(
         "This will clear the current game.",
@@ -334,6 +345,8 @@ function initEventListeners() {
             openPoisonModal(playerName);
         } else if (target.closest(".mark-died-btn")) {
             markPlayerAsDied(playerName);
+        } else if (target.closest(".remove-player-btn")) {
+            removePlayerFromGameUI(playerName);
         }
     });
 

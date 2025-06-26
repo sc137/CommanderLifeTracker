@@ -55,6 +55,15 @@ describe('UI Management', () => {
         expect(overlay.hidden).toBe(true);
     });
 
+    test('new player modal should focus input', () => {
+        jest.useFakeTimers();
+        showModal('new-player-modal');
+        jest.advanceTimersByTime(60);
+        const input = document.getElementById('new-player-input');
+        expect(document.activeElement).toBe(input);
+        jest.useRealTimers();
+    });
+
     test('should show an input error', () => {
         showInputError('Test error');
         const error = document.getElementById('new-player-error');

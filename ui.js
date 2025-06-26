@@ -268,7 +268,9 @@ function showModal(modalId) {
         const focusable = modal.querySelector(
             'button, [tabindex]:not([tabindex="-1"]), input, select, textarea, a[href]'
         );
-        if (focusable) focusable.focus();
+        if (focusable) {
+            setTimeout(() => focusable.focus(), 50);
+        }
         modal.setAttribute("aria-modal", "true");
         modal.setAttribute("role", "dialog");
     }

@@ -318,6 +318,17 @@ function initEventListeners() {
 
     document.getElementById("close-game-log-btn").addEventListener("click", hideModal);
 
+    document.getElementById("game-log-list").addEventListener("click", async (e) => {
+        const btn = e.target.closest(".delete-game-log-btn");
+        if (!btn) return;
+        const gameId = parseInt(btn.dataset.logId, 10);
+        if (!gameId) return;
+        const confirmed = await showConfirm("Delete this game log entry?", "Delete Game");
+        if (!confirmed) return;
+        deleteGameLogEntry(gameId);
+        renderGameLog();
+    });
+
     document.getElementById("settings-link").addEventListener("click", (e) => {
         e.preventDefault();
         document.getElementById("menu-overlay").hidden = true;

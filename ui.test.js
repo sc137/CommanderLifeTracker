@@ -1,4 +1,5 @@
 
+import { jest } from '@jest/globals';
 import { state } from './state.js';
 import { initUI, createPlayerTile, updateCurrentGamePlayersUI, showModal, hideModal, showInputError, clearInputError, updateAddPlayerBtnVisibility } from './ui.js';
 

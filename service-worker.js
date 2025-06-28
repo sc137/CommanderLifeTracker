@@ -1,17 +1,17 @@
-const CACHE_VERSION = 'v1.0.0'; // Update this to force cache refresh
+const CACHE_VERSION = 'v1.0.1'; // Update this to force cache refresh
 const CACHE_NAME = `cmdrtrackr-cache-${CACHE_VERSION}`;
 const CORE_ASSETS = [
-  '/',
-  '/index.html',
-  '/style.css',
-  '/app.js',
-  '/state.js',
-  '/ui.js',
-  '/events.js',
-  '/manifest.json',
+  './',
+  './index.html',
+  './style.css',
+  './app.js',
+  './state.js',
+  './ui.js',
+  './events.js',
+  './manifest.json',
   // Add your icons here:
-  '/icon-192.png',
-  '/icon-512.png'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // Install: Cache core assets/app shell

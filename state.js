@@ -120,9 +120,9 @@ function reorderPlayers(fromPlayer, toPlayer) {
   const fromIdx = state.players.indexOf(fromPlayer);
   const toIdx = state.players.indexOf(toPlayer);
   if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
-  state.players.splice(fromIdx, 1);
-  const insertIdx = fromIdx < toIdx ? toIdx : toIdx + 1;
-  state.players.splice(insertIdx, 0, fromPlayer);
+  const temp = state.players[fromIdx];
+  state.players[fromIdx] = state.players[toIdx];
+  state.players[toIdx] = temp;
   saveState();
 }
 

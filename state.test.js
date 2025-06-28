@@ -66,12 +66,12 @@ describe('State Management', () => {
         expect(state.players).toEqual(['Player 2', 'Player 1']);
     });
 
-    test('should reorder players when moving later to earlier position', () => {
+    test('should swap players when moving later to earlier position', () => {
         addPlayerToGame('Player A');
         addPlayerToGame('Player B');
         addPlayerToGame('Player C');
         reorderPlayers('Player C', 'Player A');
-        expect(state.players).toEqual(['Player A', 'Player C', 'Player B']);
+        expect(state.players).toEqual(['Player C', 'Player B', 'Player A']);
     });
 
     test('should log a game', () => {

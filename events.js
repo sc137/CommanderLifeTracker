@@ -68,7 +68,11 @@ async function declareWinner(playerName) {
     state.gameEnded = true;
     state.winner = playerName;
 
-    logGame(playerName, state.players, state.playerState);
+    const finalLife = {};
+    state.players.forEach((p) => {
+        finalLife[p] = state.playerState[p]?.life || 0;
+    });
+    logGame(playerName, state.players, finalLife);
 
     document.querySelectorAll(".player-tile").forEach((tile) => {
         tile.classList.add("game-ended");

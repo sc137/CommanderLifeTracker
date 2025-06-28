@@ -127,12 +127,19 @@ function reorderPlayers(fromPlayer, toPlayer) {
 }
 
 function logGame(winnerName, playersInGame, finalLifeTotals) {
+    const lifeTotalsSnapshot = {};
+    playersInGame.forEach((p) => {
+        const val = finalLifeTotals[p];
+        lifeTotalsSnapshot[p] =
+            val && typeof val === "object" ? val.life : val;
+    });
+
     const log = JSON.parse(localStorage.getItem(GAME_LOG_KEY) || "[]");
     log.push({
         id: Date.now(),
         winner: winnerName,
         players: playersInGame,
-        lifeTotals: finalLifeTotals,
+        lifeTotals: lifeTotalsSnapshot,
         endedAt: new Date().toISOString(),
     });
     localStorage.setItem(GAME_LOG_KEY, JSON.stringify(log));

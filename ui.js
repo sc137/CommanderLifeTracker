@@ -238,11 +238,18 @@ function renderGameLog() {
             details.className = "game-log-details";
             details.textContent = `Players: ${entry.players.join(", ")}`;
 
-            const lifeTotals = document.createElement("div");
-            lifeTotals.className = "game-log-details";
-            lifeTotals.textContent =
-                "Final Life: " +
-                entry.players.map((p) => `${p}: ${entry.lifeTotals[p]}`).join(", ");
+        const lifeTotals = document.createElement("div");
+        lifeTotals.className = "game-log-details";
+        lifeTotals.textContent =
+            "Final Life: " +
+            entry.players
+                .map((p) => {
+                    const val = entry.lifeTotals[p];
+                    return `${p}: ${
+                        val && typeof val === "object" ? val.life : val
+                    }`;
+                })
+                .join(", ");
 
             const delBtn = document.createElement("button");
             delBtn.className = "delete-game-log-btn";

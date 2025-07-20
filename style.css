@@ -802,7 +802,7 @@ button:active {
 }
 
 .poison-counter-btn {
-  background: var(--color-poison);
+  background: var(--color-btn);
   color: #fff;
   border: none;
   border-radius: 50%;
@@ -818,7 +818,7 @@ button:active {
 }
 .poison-counter-btn:hover,
 .poison-counter-btn:focus {
-  background: #ca8a04;
+  background: #2563eb;
   transform: scale(1.08);
 }
 

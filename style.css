@@ -778,7 +778,7 @@ button:active {
 .commander-damage-value {
   font-size: 1.2em;
   font-weight: 700;
-  color: #e11d48;
+  color: var(--color-header);
   min-width: 2em;
   text-align: center;
 }

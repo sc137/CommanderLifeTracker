@@ -24,6 +24,7 @@ import {
     showInputError,
     clearInputError,
     updateAddPlayerBtnVisibility,
+    updateCommanderDamageIndicator,
 } from "./ui.js";
 
 function handleSaveNewPlayer() {
@@ -125,6 +126,7 @@ function changeCommanderDamage(player, opponent, delta) {
         );
         if (tile) tile.classList.remove("commander-lethal");
     }
+    updateCommanderDamageIndicator(player);
     saveState();
 }
 

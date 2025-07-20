@@ -1,7 +1,7 @@
 
 import { jest } from '@jest/globals';
 import { state } from './state.js';
-import { initUI, createPlayerTile, updateCurrentGamePlayersUI, showModal, hideModal, showInputError, clearInputError, updateAddPlayerBtnVisibility } from './ui.js';
+import { initUI, createPlayerTile, updateCurrentGamePlayersUI, showModal, hideModal, showInputError, clearInputError, updateAddPlayerBtnVisibility, updateCommanderDamageIndicator } from './ui.js';
 
 describe('UI Management', () => {
     beforeEach(() => {
@@ -84,6 +84,18 @@ describe('UI Management', () => {
         clearInputError();
         const error = document.getElementById('new-player-error');
         expect(error).toBeNull();
+    });
+
+    test('commander damage indicator updates', () => {
+        state.players = ['Alice'];
+        state.playerState = { 'Alice': { life: 40, poison: 0, dead: false } };
+        state.commanderDamage = { 'Alice': { Bob: 0 } };
+        updateCurrentGamePlayersUI();
+        const btn = document.querySelector('.commander-damage-btn');
+        expect(btn.classList.contains('has-commander-damage')).toBe(false);
+        state.commanderDamage['Alice'].Bob = 5;
+        updateCommanderDamageIndicator('Alice');
+        expect(btn.classList.contains('has-commander-damage')).toBe(true);
     });
 
     test('should update the add player button visibility', () => {

@@ -344,7 +344,7 @@ function initEventListeners() {
 
     document.getElementById("close-settings-btn").addEventListener("click", hideModal);
 
-    document.getElementById("player-tiles").addEventListener("click", (e) => {
+    document.getElementById("player-tiles").addEventListener("click", async (e) => {
         const target = e.target;
         const tile = target.closest(".player-tile");
         if (!tile) return;
@@ -361,7 +361,13 @@ function initEventListeners() {
         } else if (target.closest(".poison-btn")) {
             openPoisonModal(playerName);
         } else if (target.closest(".mark-died-btn")) {
-            markPlayerAsDied(playerName);
+            const confirmed = await showConfirm(
+                `Mark "${playerName}" as dead?`,
+                "Mark Player Dead"
+            );
+            if (confirmed) {
+                markPlayerAsDied(playerName);
+            }
         } else if (target.closest(".remove-player-btn")) {
             removePlayerFromGameUI(playerName);
         }

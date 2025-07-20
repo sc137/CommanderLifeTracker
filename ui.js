@@ -79,6 +79,10 @@ function createPlayerTile(playerName) {
     commanderBtn.title = "Commander Damage";
     commanderBtn.setAttribute("aria-label", "Commander Damage");
     commanderBtn.textContent = "⚔️";
+    const dmgRec = state.commanderDamage[playerName] || {};
+    if (Object.values(dmgRec).some((v) => v > 0)) {
+        commanderBtn.classList.add("has-commander-damage");
+    }
 
     const poisonBtn = document.createElement("button");
     poisonBtn.className = "poison-btn";
@@ -350,6 +354,20 @@ function updateAddPlayerBtnVisibility() {
     addPlayerBtn.style.display = state.gameEnded ? "none" : "";
 }
 
+function updateCommanderDamageIndicator(playerName) {
+    const btn = document.querySelector(
+        `.player-tile[data-player="${playerName}"] .commander-damage-btn`
+    );
+    if (!btn) return;
+    const record = state.commanderDamage[playerName] || {};
+    const hasDmg = Object.values(record).some((v) => v > 0);
+    if (hasDmg) {
+        btn.classList.add("has-commander-damage");
+    } else {
+        btn.classList.remove("has-commander-damage");
+    }
+}
+
 export {
     initUI,
     createPlayerTile,
@@ -363,4 +381,5 @@ export {
     showInputError,
     clearInputError,
     updateAddPlayerBtnVisibility,
+    updateCommanderDamageIndicator,
 };

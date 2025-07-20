@@ -448,6 +448,18 @@ main {
   box-shadow: 0 1px 4px rgba(30, 41, 59, 0.07);
   user-select: none;
   touch-action: manipulation;
+  position: relative;
+}
+
+.commander-damage-btn.has-commander-damage::after {
+  content: "";
+  position: absolute;
+  top: 0.25em;
+  right: 0.25em;
+  width: 0.6em;
+  height: 0.6em;
+  background: #f87171;
+  border-radius: 50%;
 }
 
 .commander-damage-btn:hover,

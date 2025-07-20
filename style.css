@@ -1215,5 +1215,15 @@ button:active {
     max-width: 85vw;  /* Change from 90vw to 85vw */
     padding: var(--spacing-xs) var(--spacing-xs);
   }
+
+  /* Larger touch targets for mobile */
+  .life-btn,
+  .commander-damage-btn,
+  .poison-btn,
+  .mark-died-btn,
+  .remove-player-btn {
+    width: 2.8em;
+    height: 2.8em;
+  }
 }
 

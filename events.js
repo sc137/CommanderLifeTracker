@@ -90,7 +90,8 @@ async function declareWinner(playerName) {
 }
 
 function updatePlayerLife(playerName, delta) {
-    let life = state.playerState[playerName].life + delta;
+    const currentLife = Number(state.playerState[playerName].life);
+    let life = (Number.isFinite(currentLife) ? currentLife : 0) + delta;
     if (life < 0) life = 0;
     if (life > 999) life = 999;
     state.playerState[playerName].life = life;

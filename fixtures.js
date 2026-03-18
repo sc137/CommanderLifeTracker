@@ -116,6 +116,7 @@ function setupAppDOM() {
   appendElement(doc, 'button', 'export-data-btn', settingsModal);
   appendElement(doc, 'button', 'import-data-btn', settingsModal);
   appendElement(doc, 'button', 'restore-backup-btn', settingsModal);
+  appendElement(doc, 'button', 'check-updates-btn', settingsModal);
   appendElement(doc, 'div', 'settings-data-status', settingsModal);
   appendElement(doc, 'button', 'close-settings-btn', settingsModal);
 

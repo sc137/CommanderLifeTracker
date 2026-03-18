@@ -157,6 +157,40 @@ describe('Event Flows', () => {
     assert.strictEqual(document.getElementById('settings-starting-life-select').value, '30');
   });
 
+  it('should report when the app is already up to date', async () => {
+    const originalLocation = global.window.location;
+    const updateCalls = [];
+
+    global.window.location = {
+      reload() {
+        throw new Error('reload should not be called when already up to date');
+      },
+    };
+    global.window.navigator.serviceWorker = {
+      async getRegistration() {
+        return {
+          waiting: null,
+          async update() {
+            updateCalls.push('update');
+          },
+        };
+      },
+    };
+
+    try {
+      document.getElementById('check-updates-btn').click();
+      await delay(0);
+
+      assert.deepStrictEqual(updateCalls, ['update']);
+      assert.strictEqual(
+        document.getElementById('settings-data-status').textContent,
+        'Already up to date.'
+      );
+    } finally {
+      global.window.location = originalLocation;
+    }
+  });
+
   it('should export app data through the data transfer modal', () => {
     savePlayer('Alice');
     state.players = ['Alice'];

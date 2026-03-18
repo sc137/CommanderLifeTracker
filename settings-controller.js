@@ -209,9 +209,46 @@ function openSettingsModal() {
     showModal("settings-modal");
 }
 
+async function handleCheckForUpdates() {
+    const navigatorRef = window.navigator;
+    if (!navigatorRef || !navigatorRef.serviceWorker) {
+        setSettingsDataStatus("Updates are not supported in this browser.", true);
+        return;
+    }
+
+    try {
+        const registration = await navigatorRef.serviceWorker.getRegistration();
+        if (!registration) {
+            setSettingsDataStatus("No app update registration was found.", true);
+            return;
+        }
+
+        if (registration.waiting) {
+            setSettingsDataStatus("Update found. Reloading...");
+            registration.waiting.postMessage("skipWaiting");
+            window.location.reload();
+            return;
+        }
+
+        await registration.update();
+
+        if (registration.waiting) {
+            setSettingsDataStatus("Update found. Reloading...");
+            registration.waiting.postMessage("skipWaiting");
+            window.location.reload();
+            return;
+        }
+
+        setSettingsDataStatus("Already up to date.");
+    } catch {
+        setSettingsDataStatus("Could not check for updates right now.", true);
+    }
+}
+
 export {
     applyImportedData,
     clearSettingsDataStatus,
+    handleCheckForUpdates,
     handleRestoreBackup,
     handleStartingLifeChange,
     openExportDataModal,

@@ -38,6 +38,7 @@ import {
 import {
     applyImportedData,
     clearSettingsDataStatus,
+    handleCheckForUpdates,
     handleRestoreBackup,
     handleStartingLifeChange,
     openExportDataModal,
@@ -416,6 +417,7 @@ function initEventListeners() {
     document.getElementById("export-data-btn").addEventListener("click", openExportDataModal);
     document.getElementById("import-data-btn").addEventListener("click", openImportDataModal);
     document.getElementById("restore-backup-btn").addEventListener("click", handleRestoreBackup);
+    document.getElementById("check-updates-btn").addEventListener("click", handleCheckForUpdates);
     document.getElementById("share-export-btn").addEventListener("click", shareExportData);
     document.getElementById("apply-import-btn").addEventListener("click", applyImportedData);
     document.getElementById("close-data-transfer-btn").addEventListener("click", hideModal);

@@ -131,6 +131,19 @@ function updatePlayerLifeUI(playerName) {
     }
 }
 
+function updatePoisonUI(playerName, count) {
+    document.getElementById("poison-count-display").textContent = count;
+    const tile = document.querySelector(
+        `.player-tile[data-player="${playerName}"]`
+    );
+    if (!tile) return;
+
+    const poisonCount = tile.querySelector(".poison-count");
+    if (poisonCount) {
+        poisonCount.textContent = count;
+    }
+}
+
 function changeCommanderDamage(player, opponent, delta) {
     const currentValue = state.commanderDamage[player]?.[opponent] ?? 0;
     const nextValue = Math.max(
@@ -155,6 +168,7 @@ function changeCommanderDamage(player, opponent, delta) {
         }
     }
     updateCommanderDamageIndicator(player);
+    return result;
 }
 
 function openCommanderDamageModal(playerName) {
@@ -165,6 +179,7 @@ function openCommanderDamageModal(playerName) {
 
     const opponents = state.players.filter((player) => player !== playerName);
     opponents.forEach((opponent) => {
+        const isDead = Boolean(state.playerState[opponent]?.dead);
         if (!state.commanderDamage[playerName]) state.commanderDamage[playerName] = {};
         if (state.commanderDamage[playerName][opponent] == null) {
             state.commanderDamage[playerName][opponent] = 0;
@@ -172,6 +187,9 @@ function openCommanderDamageModal(playerName) {
 
         const row = document.createElement("div");
         row.className = "commander-damage-row";
+        if (isDead) {
+            row.classList.add("dead-player-row");
+        }
 
         const name = document.createElement("span");
         name.className = "commander-opponent-name";
@@ -183,10 +201,13 @@ function openCommanderDamageModal(playerName) {
         const minusBtn = document.createElement("button");
         minusBtn.className = "commander-damage-btn";
         minusBtn.textContent = "-";
-        minusBtn.addEventListener("click", () => {
-            changeCommanderDamage(playerName, opponent, -1);
-            openCommanderDamageModal(playerName);
-        });
+        minusBtn.disabled = isDead;
+        if (!isDead) {
+            minusBtn.addEventListener("click", () => {
+                changeCommanderDamage(playerName, opponent, -1);
+                openCommanderDamageModal(playerName);
+            });
+        }
 
         const value = document.createElement("span");
         value.className = "commander-damage-value";
@@ -200,10 +221,33 @@ function openCommanderDamageModal(playerName) {
         const plusBtn = document.createElement("button");
         plusBtn.className = "commander-damage-btn";
         plusBtn.textContent = "+";
-        plusBtn.addEventListener("click", () => {
-            changeCommanderDamage(playerName, opponent, 1);
-            openCommanderDamageModal(playerName);
-        });
+        plusBtn.disabled = isDead;
+        if (!isDead) {
+            plusBtn.addEventListener("click", async () => {
+                const result = changeCommanderDamage(playerName, opponent, 1);
+                const reachedCommanderLethal =
+                    result.previousValue < GAME_LIMITS.commanderLethal &&
+                    result.value >= GAME_LIMITS.commanderLethal;
+
+                if (!reachedCommanderLethal) {
+                    openCommanderDamageModal(playerName);
+                    return;
+                }
+
+                const confirmed = await showConfirm(
+                    `Mark "${playerName}" as dead from commander damage by ${opponent}?`,
+                    "Commander Damage"
+                );
+                if (!confirmed) {
+                    openCommanderDamageModal(playerName);
+                    return;
+                }
+
+                hideModal();
+                await markPlayerAsDied(playerName);
+                return;
+            });
+        }
 
         controls.appendChild(minusBtn);
         controls.appendChild(value);
@@ -459,20 +503,29 @@ function initEventListeners() {
 
     document.getElementById("close-commander-damage-btn").addEventListener("click", hideModal);
 
-    document.getElementById("poison-plus-btn").addEventListener("click", () => {
+    document.getElementById("poison-plus-btn").addEventListener("click", async () => {
         if (!state.currentPoisonPlayer) return;
-        const currentCount = state.playerState[state.currentPoisonPlayer].poison || 0;
+        const playerName = state.currentPoisonPlayer;
+        const currentCount = state.playerState[playerName].poison || 0;
         if (currentCount >= GAME_LIMITS.maxPoison) return;
 
         captureUndoState();
-        const count = adjustPoison(state.currentPoisonPlayer, 1);
-        document.getElementById("poison-count-display").textContent = count;
-        const tile = document.querySelector(
-            `.player-tile[data-player="${state.currentPoisonPlayer}"]`
-        );
-        if (tile) {
-            const poisonCount = tile.querySelector(".poison-count");
-            if (poisonCount) poisonCount.textContent = count;
+        const count = adjustPoison(playerName, 1);
+        updatePoisonUI(playerName, count);
+
+        if (count === GAME_LIMITS.maxPoison) {
+            const confirmed = await showConfirm(
+                `Mark "${playerName}" as dead from poison counters?`,
+                "Poison Counters"
+            );
+            if (!confirmed) {
+                openPoisonModal(playerName);
+                return;
+            }
+
+            hideModal();
+            state.currentPoisonPlayer = null;
+            await markPlayerAsDied(playerName);
         }
     });
 
@@ -483,14 +536,7 @@ function initEventListeners() {
 
         captureUndoState();
         const count = adjustPoison(state.currentPoisonPlayer, -1);
-        document.getElementById("poison-count-display").textContent = count;
-        const tile = document.querySelector(
-            `.player-tile[data-player="${state.currentPoisonPlayer}"]`
-        );
-        if (tile) {
-            const poisonCount = tile.querySelector(".poison-count");
-            if (poisonCount) poisonCount.textContent = count;
-        }
+        updatePoisonUI(state.currentPoisonPlayer, count);
     });
 
     document.getElementById("close-poison-modal-btn").addEventListener("click", () => {

@@ -289,4 +289,123 @@ describe('Commander Damage', () => {
       '40'
     );
   });
+
+  it('should prompt to mark a player dead at 21 commander damage from one opponent', async () => {
+    changeCommanderDamage('Alice', 'Bob', 20);
+
+    document
+      .querySelector('.player-tile[data-player="Alice"] .commander-damage-btn')
+      .click();
+    const commanderButtons = document
+      .getElementById('commander-damage-list')
+      .querySelectorAll('.commander-damage-btn');
+    commanderButtons[1].click();
+    document.getElementById('confirm-modal-ok').click();
+    await delay(0);
+
+    assert.strictEqual(state.commanderDamage.Alice.Bob, 21);
+    assert.strictEqual(state.playerState.Alice.dead, true);
+    assert.strictEqual(document.getElementById('commander-damage-modal').hidden, true);
+  });
+
+  it('should keep the player alive if commander lethal is declined', async () => {
+    changeCommanderDamage('Alice', 'Bob', 20);
+
+    document
+      .querySelector('.player-tile[data-player="Alice"] .commander-damage-btn')
+      .click();
+    const commanderButtons = document
+      .getElementById('commander-damage-list')
+      .querySelectorAll('.commander-damage-btn');
+    commanderButtons[1].click();
+    document.getElementById('confirm-modal-cancel').click();
+    await delay(0);
+
+    assert.strictEqual(state.commanderDamage.Alice.Bob, 21);
+    assert.strictEqual(state.playerState.Alice.dead, false);
+    assert.strictEqual(document.getElementById('commander-damage-modal').hidden, false);
+  });
+
+  it('should gray out and disable dead opponents in the commander damage modal', () => {
+    state.players = ['Alice', 'Bob', 'Carol'];
+    state.playerState = {
+      Alice: { life: 40, poison: 0, dead: false },
+      Bob: { life: 40, poison: 0, dead: true },
+      Carol: { life: 40, poison: 0, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+
+    document
+      .querySelector('.player-tile[data-player="Alice"] .commander-damage-btn')
+      .click();
+
+    const rows = document
+      .getElementById('commander-damage-list')
+      .querySelectorAll('.commander-damage-row');
+    let bobRow;
+    let carolRow;
+    for (const row of rows) {
+      const name = row.querySelector('.commander-opponent-name').textContent;
+      if (name === 'Bob') bobRow = row;
+      if (name === 'Carol') carolRow = row;
+    }
+
+    assert.ok(bobRow.classList.contains('dead-player-row'));
+    assert.strictEqual(
+      bobRow.querySelectorAll('.commander-damage-btn')[0].disabled,
+      true
+    );
+    assert.strictEqual(
+      bobRow.querySelectorAll('.commander-damage-btn')[1].disabled,
+      true
+    );
+    assert.strictEqual(carolRow.classList.contains('dead-player-row'), false);
+    assert.strictEqual(
+      carolRow.querySelectorAll('.commander-damage-btn')[0].disabled,
+      false
+    );
+    assert.strictEqual(
+      carolRow.querySelectorAll('.commander-damage-btn')[1].disabled,
+      false
+    );
+  });
+});
+
+describe('Poison Counters', () => {
+  beforeEach(() => {
+    setupEventTestDOM();
+    state.players = ['Alice'];
+    state.playerState = {
+      Alice: { life: 40, poison: 9, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+  });
+
+  it('should prompt to mark a player dead when poison reaches ten', async () => {
+    document
+      .querySelector('.player-tile[data-player="Alice"] .poison-btn')
+      .click();
+    document.getElementById('poison-plus-btn').click();
+    document.getElementById('confirm-modal-ok').click();
+    await delay(0);
+
+    assert.strictEqual(state.playerState.Alice.poison, 10);
+    assert.strictEqual(state.playerState.Alice.dead, true);
+    assert.strictEqual(document.getElementById('poison-modal').hidden, true);
+    assert.strictEqual(state.currentPoisonPlayer, null);
+  });
+
+  it('should keep the player alive if the poison death prompt is declined', async () => {
+    document
+      .querySelector('.player-tile[data-player="Alice"] .poison-btn')
+      .click();
+    document.getElementById('poison-plus-btn').click();
+    document.getElementById('confirm-modal-cancel').click();
+    await delay(0);
+
+    assert.strictEqual(state.playerState.Alice.poison, 10);
+    assert.strictEqual(state.playerState.Alice.dead, false);
+    assert.strictEqual(document.getElementById('poison-modal').hidden, false);
+    assert.strictEqual(state.currentPoisonPlayer, 'Alice');
+  });
 });

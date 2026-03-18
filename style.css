@@ -747,6 +747,16 @@ button:active {
   box-shadow: 0 1px 4px rgba(30, 41, 59, 0.04);
 }
 
+.commander-damage-row.dead-player-row {
+  background: #e5e7eb;
+  opacity: 0.6;
+}
+
+.commander-damage-row.dead-player-row .commander-opponent-name,
+.commander-damage-row.dead-player-row .commander-damage-value {
+  color: #6b7280;
+}
+
 .commander-opponent-name {
   font-weight: 500;
   color: var(--color-header);

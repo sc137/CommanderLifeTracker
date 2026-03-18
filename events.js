@@ -1,6 +1,5 @@
 import {
     state,
-    saveState,
     addPlayerToGame,
     removePlayerFromGame,
     reorderPlayers,
@@ -9,11 +8,18 @@ import {
     getDefaultPlayer,
     getSavedPlayers,
     removePlayer,
-    logGame,
     deleteGameLogEntry,
     pushUndoState,
     undoLastAction,
 } from "./state.js";
+import {
+    adjustCommanderDamage,
+    adjustPlayerLife,
+    adjustPoison,
+    declareWinner as applyWinner,
+    markPlayerAsDead,
+    resetCurrentGame,
+} from "./game-actions.js";
 import { GAME_LIMITS } from "./constants.js";
 import {
     updateCurrentGamePlayersUI,
@@ -99,15 +105,7 @@ async function declareWinner(playerName, options = {}) {
     if (!options.skipUndo) {
         captureUndoState();
     }
-
-    state.gameEnded = true;
-    state.winner = playerName;
-
-    const finalLife = {};
-    state.players.forEach((player) => {
-        finalLife[player] = state.playerState[player]?.life || 0;
-    });
-    logGame(playerName, state.players, finalLife);
+    if (!applyWinner(playerName)) return;
 
     document.querySelectorAll(".player-tile").forEach((tile) => {
         tile.classList.add("game-ended");
@@ -118,61 +116,45 @@ async function declareWinner(playerName, options = {}) {
         `.player-tile[data-player="${playerName}"]`
     );
     if (winnerTile) winnerTile.classList.add("winner-tile");
-
-    saveState();
     updateAddPlayerBtnVisibility();
 }
 
-function updatePlayerLife(playerName, delta) {
-    let life = state.playerState[playerName].life + delta;
-    if (life < 0) life = 0;
-    if (life > GAME_LIMITS.maxLife) life = GAME_LIMITS.maxLife;
-    state.playerState[playerName].life = life;
-
+function updatePlayerLifeUI(playerName) {
     const tile = document.querySelector(
         `.player-tile[data-player="${playerName}"]`
     );
     if (tile) {
         const lifeTotal = tile.querySelector(".life-total");
-        if (lifeTotal) lifeTotal.textContent = life;
+        if (lifeTotal) {
+            lifeTotal.textContent = state.playerState[playerName]?.life ?? 0;
+        }
     }
-    saveState();
 }
 
 function changeCommanderDamage(player, opponent, delta) {
-    if (!state.commanderDamage[player]) state.commanderDamage[player] = {};
-    if (state.commanderDamage[player][opponent] == null) {
-        state.commanderDamage[player][opponent] = 0;
-    }
-
-    const previousVal = state.commanderDamage[player][opponent];
-    let val = previousVal + delta;
-    if (val < 0) val = 0;
-    if (val > GAME_LIMITS.maxCommanderDamage) {
-        val = GAME_LIMITS.maxCommanderDamage;
-    }
-    if (val !== previousVal) {
+    const currentValue = state.commanderDamage[player]?.[opponent] ?? 0;
+    const nextValue = Math.max(
+        0,
+        Math.min(GAME_LIMITS.maxCommanderDamage, currentValue + delta)
+    );
+    if (nextValue !== currentValue) {
         captureUndoState();
     }
-    state.commanderDamage[player][opponent] = val;
 
-    const appliedDelta = val - previousVal;
-    if (appliedDelta !== 0) {
-        updatePlayerLife(player, -appliedDelta);
-    }
+    const result = adjustCommanderDamage(player, opponent, delta);
+    updatePlayerLifeUI(player);
 
     const tile = document.querySelector(
         `.player-tile[data-player="${player}"]`
     );
     if (tile) {
-        if (val >= GAME_LIMITS.commanderLethal) {
+        if (result.isLethal) {
             tile.classList.add("commander-lethal");
         } else {
             tile.classList.remove("commander-lethal");
         }
     }
     updateCommanderDamageIndicator(player);
-    saveState();
 }
 
 function openCommanderDamageModal(playerName) {
@@ -255,13 +237,10 @@ async function markPlayerAsDied(playerName) {
     captureUndoState();
     tile.classList.add("player-died");
     tile.querySelectorAll("button").forEach((btn) => (btn.disabled = true));
-    state.playerState[playerName].dead = true;
-
-    const alivePlayers = state.players.filter((player) => !state.playerState[player]?.dead);
+    const alivePlayers = markPlayerAsDead(playerName);
     if (state.players.length > 1 && alivePlayers.length === 1) {
         declareWinner(alivePlayers[0], { skipUndo: true });
     }
-    saveState();
 }
 
 async function removePlayerFromGameUI(playerName) {
@@ -283,18 +262,7 @@ async function startNewGame() {
     if (!confirmed) return;
 
     captureUndoState();
-    state.players = [];
-    state.playerState = {};
-    state.gameEnded = false;
-    state.winner = null;
-    state.commanderDamage = {};
-
-    const defaultPlayer = getDefaultPlayer();
-    if (defaultPlayer) {
-        addPlayerToGame(defaultPlayer);
-    }
-
-    saveState();
+    resetCurrentGame();
     refreshGameUI();
 }
 
@@ -417,7 +385,8 @@ function initEventListeners() {
         if (target.closest(".life-btn")) {
             captureUndoState();
             const change = parseInt(target.closest(".life-btn").dataset.change, 10);
-            updatePlayerLife(playerName, change);
+            adjustPlayerLife(playerName, change);
+            updatePlayerLifeUI(playerName);
         } else if (target.closest(".declare-winner-btn")) {
             declareWinner(playerName);
         } else if (target.closest(".commander-damage-btn")) {
@@ -496,8 +465,7 @@ function initEventListeners() {
         if (currentCount >= GAME_LIMITS.maxPoison) return;
 
         captureUndoState();
-        state.playerState[state.currentPoisonPlayer].poison = currentCount + 1;
-        const count = state.playerState[state.currentPoisonPlayer].poison;
+        const count = adjustPoison(state.currentPoisonPlayer, 1);
         document.getElementById("poison-count-display").textContent = count;
         const tile = document.querySelector(
             `.player-tile[data-player="${state.currentPoisonPlayer}"]`
@@ -506,7 +474,6 @@ function initEventListeners() {
             const poisonCount = tile.querySelector(".poison-count");
             if (poisonCount) poisonCount.textContent = count;
         }
-        saveState();
     });
 
     document.getElementById("poison-minus-btn").addEventListener("click", () => {
@@ -515,8 +482,7 @@ function initEventListeners() {
         if (currentCount <= 0) return;
 
         captureUndoState();
-        state.playerState[state.currentPoisonPlayer].poison = currentCount - 1;
-        const count = state.playerState[state.currentPoisonPlayer].poison;
+        const count = adjustPoison(state.currentPoisonPlayer, -1);
         document.getElementById("poison-count-display").textContent = count;
         const tile = document.querySelector(
             `.player-tile[data-player="${state.currentPoisonPlayer}"]`
@@ -525,7 +491,6 @@ function initEventListeners() {
             const poisonCount = tile.querySelector(".poison-count");
             if (poisonCount) poisonCount.textContent = count;
         }
-        saveState();
     });
 
     document.getElementById("close-poison-modal-btn").addEventListener("click", () => {

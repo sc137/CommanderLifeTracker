@@ -276,4 +276,17 @@ describe('Commander Damage', () => {
     assert.strictEqual(state.commanderDamage.Alice.Bob, 2);
     assert.strictEqual(state.playerState.Alice.life, 38);
   });
+
+  it('should undo commander damage and restore life totals', () => {
+    changeCommanderDamage('Alice', 'Bob', 3);
+
+    document.getElementById('undo-btn').click();
+
+    assert.deepStrictEqual(state.commanderDamage, {});
+    assert.strictEqual(state.playerState.Alice.life, 40);
+    assert.strictEqual(
+      document.querySelector('.player-tile[data-player="Alice"] .life-total').textContent,
+      '40'
+    );
+  });
 });

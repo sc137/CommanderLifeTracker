@@ -183,6 +183,11 @@ class Element {
     if (global.document) global.document.activeElement = this;
   }
 
+  contains(node) {
+    if (node === this) return true;
+    return this.children.some((child) => child.contains(node));
+  }
+
   matches(selector) {
     return selector
       .split(',')
@@ -305,6 +310,12 @@ class Document {
 
   createElement(tagName) {
     return new Element(tagName);
+  }
+
+  createTextNode(text) {
+    const node = new Element("#text");
+    node.textContent = text;
+    return node;
   }
 
   addEventListener(event, handler, options = {}) {

@@ -1,6 +1,6 @@
-import { state, saveState, reorderPlayers, ensurePlayerState, getGameLog, deleteGameLogEntry, getSavedPlayers, getDefaultPlayer, setDefaultPlayer, removePlayer } from './state.js';
+import { state, ensurePlayerState, getGameLog, getSavedPlayers, getDefaultPlayer } from './state.js';
 
-let modalOverlay, addPlayerModal, newPlayerModal, aboutModal, gameLogModal, settingsModal, commanderDamageModal, poisonModal, confirmModal, newPlayerInput;
+let modalOverlay, addPlayerModal, newPlayerModal, aboutModal, gameLogModal, settingsModal, commanderDamageModal, poisonModal, confirmModal, dataTransferModal, newPlayerInput;
 
 function initUI() {
     modalOverlay = document.getElementById("modal-overlay");
@@ -12,6 +12,7 @@ function initUI() {
     commanderDamageModal = document.getElementById("commander-damage-modal");
     poisonModal = document.getElementById("poison-modal");
     confirmModal = document.getElementById("confirm-modal");
+    dataTransferModal = document.getElementById("data-transfer-modal");
     newPlayerInput = document.getElementById("new-player-input");
 }
 
@@ -372,6 +373,12 @@ function updateCommanderDamageIndicator(playerName) {
     }
 }
 
+function updateUndoButtonState() {
+    const undoBtn = document.getElementById("undo-btn");
+    if (!undoBtn) return;
+    undoBtn.disabled = state.undoStack.length === 0;
+}
+
 export {
     initUI,
     createPlayerTile,
@@ -386,4 +393,5 @@ export {
     clearInputError,
     updateAddPlayerBtnVisibility,
     updateCommanderDamageIndicator,
+    updateUndoButtonState,
 };

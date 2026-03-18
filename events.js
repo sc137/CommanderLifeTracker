@@ -1,7 +1,8 @@
-
 import {
     state,
+    importAppData,
     saveState,
+    serializeAppData,
     addPlayerToGame,
     removePlayerFromGame,
     reorderPlayers,
@@ -12,7 +13,11 @@ import {
     removePlayer,
     logGame,
     deleteGameLogEntry,
+    restoreBackupState,
+    pushUndoState,
+    undoLastAction,
 } from "./state.js";
+import { GAME_LIMITS } from "./constants.js";
 import {
     updateCurrentGamePlayersUI,
     renderSavedPlayersList,
@@ -25,7 +30,130 @@ import {
     clearInputError,
     updateAddPlayerBtnVisibility,
     updateCommanderDamageIndicator,
+    updateUndoButtonState,
 } from "./ui.js";
+
+function refreshGameUI() {
+    updateCurrentGamePlayersUI();
+    updateAddPlayerBtnVisibility();
+    updateUndoButtonState();
+}
+
+function captureUndoState() {
+    pushUndoState();
+    updateUndoButtonState();
+}
+
+function setSettingsDataStatus(message, isError = false) {
+    const status = document.getElementById("settings-data-status");
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = isError ? "error" : "success";
+}
+
+function clearSettingsDataStatus() {
+    const status = document.getElementById("settings-data-status");
+    if (!status) return;
+    status.textContent = "";
+    status.dataset.state = "";
+}
+
+function setDataTransferStatus(message, isError = false) {
+    const status = document.getElementById("data-transfer-status");
+    if (!status) return;
+    status.textContent = message;
+    status.dataset.state = isError ? "error" : "success";
+}
+
+function configureDataTransferModal({ title, help, value, importMode }) {
+    document.getElementById("data-transfer-title").textContent = title;
+    document.getElementById("data-transfer-help").textContent = help;
+
+    const textarea = document.getElementById("data-transfer-textarea");
+    textarea.value = value;
+    textarea.readOnly = !importMode;
+    textarea.placeholder = importMode ? "Paste exported JSON here." : "";
+
+    document.getElementById("apply-import-btn").hidden = !importMode;
+    setDataTransferStatus("");
+}
+
+function openExportDataModal() {
+    configureDataTransferModal({
+        title: "Export Data",
+        help: "Copy this JSON and store it somewhere safe.",
+        value: JSON.stringify(serializeAppData(), null, 2),
+        importMode: false,
+    });
+    showModal("data-transfer-modal");
+}
+
+function openImportDataModal() {
+    configureDataTransferModal({
+        title: "Import Data",
+        help: "Paste previously exported JSON. This replaces saved players, history, and the current game.",
+        value: "",
+        importMode: true,
+    });
+    showModal("data-transfer-modal");
+    setTimeout(() => document.getElementById("data-transfer-textarea").focus(), 0);
+}
+
+async function applyImportedData() {
+    const textarea = document.getElementById("data-transfer-textarea");
+    const raw = textarea.value.trim();
+
+    if (!raw) {
+        setDataTransferStatus("Paste exported JSON before importing.", true);
+        return;
+    }
+
+    let parsed;
+    try {
+        parsed = JSON.parse(raw);
+    } catch {
+        setDataTransferStatus("Import data is not valid JSON.", true);
+        return;
+    }
+
+    const confirmed = await showConfirm(
+        "This will replace your saved players, history, and current game.",
+        "Import Data"
+    );
+    if (!confirmed) return;
+
+    if (!importAppData(parsed)) {
+        setDataTransferStatus("Import data is missing required fields.", true);
+        return;
+    }
+
+    hideModal();
+    renderSettingsPlayersList();
+    refreshGameUI();
+    setSettingsDataStatus("Import complete.", false);
+}
+
+async function handleRestoreBackup() {
+    const confirmed = await showConfirm(
+        "Restore the previous saved game snapshot?",
+        "Restore Backup"
+    );
+    if (!confirmed) return;
+
+    if (!restoreBackupState()) {
+        setSettingsDataStatus("No backup is available yet.", true);
+        return;
+    }
+
+    refreshGameUI();
+    setSettingsDataStatus("Backup restored.", false);
+}
+
+function handleUndo() {
+    if (!undoLastAction()) return;
+    hideModal();
+    refreshGameUI();
+}
 
 function handleSaveNewPlayer() {
     const newPlayerInput = document.getElementById("new-player-input");
@@ -54,24 +182,29 @@ function handleSaveNewPlayer() {
         setDefaultPlayer(name);
     }
 
+    captureUndoState();
     addPlayerToGame(name);
-    updateCurrentGamePlayersUI();
+    refreshGameUI();
     hideModal();
 }
 
-async function declareWinner(playerName) {
+async function declareWinner(playerName, options = {}) {
     if (state.gameEnded) return;
     const confirmed = await showConfirm(
-        `This will end the game.`, `Declare ${playerName} as the winner?`
+        "This will end the game.",
+        `Declare ${playerName} as the winner?`
     );
     if (!confirmed) return;
+    if (!options.skipUndo) {
+        captureUndoState();
+    }
 
     state.gameEnded = true;
     state.winner = playerName;
 
     const finalLife = {};
-    state.players.forEach((p) => {
-        finalLife[p] = state.playerState[p]?.life || 0;
+    state.players.forEach((player) => {
+        finalLife[player] = state.playerState[player]?.life || 0;
     });
     logGame(playerName, state.players, finalLife);
 
@@ -92,7 +225,7 @@ async function declareWinner(playerName) {
 function updatePlayerLife(playerName, delta) {
     let life = state.playerState[playerName].life + delta;
     if (life < 0) life = 0;
-    if (life > 999) life = 999;
+    if (life > GAME_LIMITS.maxLife) life = GAME_LIMITS.maxLife;
     state.playerState[playerName].life = life;
 
     const tile = document.querySelector(
@@ -107,13 +240,19 @@ function updatePlayerLife(playerName, delta) {
 
 function changeCommanderDamage(player, opponent, delta) {
     if (!state.commanderDamage[player]) state.commanderDamage[player] = {};
-    if (state.commanderDamage[player][opponent] == null)
+    if (state.commanderDamage[player][opponent] == null) {
         state.commanderDamage[player][opponent] = 0;
+    }
 
     const previousVal = state.commanderDamage[player][opponent];
     let val = previousVal + delta;
     if (val < 0) val = 0;
-    if (val > 99) val = 99;
+    if (val > GAME_LIMITS.maxCommanderDamage) {
+        val = GAME_LIMITS.maxCommanderDamage;
+    }
+    if (val !== previousVal) {
+        captureUndoState();
+    }
     state.commanderDamage[player][opponent] = val;
 
     const appliedDelta = val - previousVal;
@@ -121,33 +260,32 @@ function changeCommanderDamage(player, opponent, delta) {
         updatePlayerLife(player, -appliedDelta);
     }
 
-    if (val >= 21) {
-        const tile = document.querySelector(
-            `.player-tile[data-player="${player}"]`
-        );
-        if (tile) tile.classList.add("commander-lethal");
-    } else {
-        const tile = document.querySelector(
-            `.player-tile[data-player="${player}"]`
-        );
-        if (tile) tile.classList.remove("commander-lethal");
+    const tile = document.querySelector(
+        `.player-tile[data-player="${player}"]`
+    );
+    if (tile) {
+        if (val >= GAME_LIMITS.commanderLethal) {
+            tile.classList.add("commander-lethal");
+        } else {
+            tile.classList.remove("commander-lethal");
+        }
     }
     updateCommanderDamageIndicator(player);
     saveState();
 }
 
 function openCommanderDamageModal(playerName) {
-    const modal = document.getElementById("commander-damage-modal");
     const title = document.getElementById("commander-damage-title");
     const list = document.getElementById("commander-damage-list");
     title.textContent = `Commander Damage for ${playerName}`;
     list.innerHTML = "";
 
-    const opponents = state.players.filter((p) => p !== playerName);
+    const opponents = state.players.filter((player) => player !== playerName);
     opponents.forEach((opponent) => {
         if (!state.commanderDamage[playerName]) state.commanderDamage[playerName] = {};
-        if (state.commanderDamage[playerName][opponent] == null)
+        if (state.commanderDamage[playerName][opponent] == null) {
             state.commanderDamage[playerName][opponent] = 0;
+        }
 
         const row = document.createElement("div");
         row.className = "commander-damage-row";
@@ -170,7 +308,7 @@ function openCommanderDamageModal(playerName) {
         const value = document.createElement("span");
         value.className = "commander-damage-value";
         value.textContent = state.commanderDamage[playerName][opponent];
-        if (state.commanderDamage[playerName][opponent] >= 21) {
+        if (state.commanderDamage[playerName][opponent] >= GAME_LIMITS.commanderLethal) {
             value.classList.add("lethal");
         } else {
             value.classList.remove("lethal");
@@ -212,13 +350,15 @@ async function markPlayerAsDied(playerName) {
         `.player-tile[data-player="${playerName}"]`
     );
     if (!tile) return;
+
+    captureUndoState();
     tile.classList.add("player-died");
     tile.querySelectorAll("button").forEach((btn) => (btn.disabled = true));
     state.playerState[playerName].dead = true;
 
-    const alivePlayers = state.players.filter((p) => !state.playerState[p]?.dead);
+    const alivePlayers = state.players.filter((player) => !state.playerState[player]?.dead);
     if (state.players.length > 1 && alivePlayers.length === 1) {
-        declareWinner(alivePlayers[0]);
+        declareWinner(alivePlayers[0], { skipUndo: true });
     }
     saveState();
 }
@@ -229,9 +369,9 @@ async function removePlayerFromGameUI(playerName) {
         "Remove Player"
     );
     if (!confirmed) return;
+    captureUndoState();
     removePlayerFromGame(playerName);
-    updateCurrentGamePlayersUI();
-    updateAddPlayerBtnVisibility();
+    refreshGameUI();
 }
 
 async function startNewGame() {
@@ -241,6 +381,7 @@ async function startNewGame() {
     );
     if (!confirmed) return;
 
+    captureUndoState();
     state.players = [];
     state.playerState = {};
     state.gameEnded = false;
@@ -253,8 +394,7 @@ async function startNewGame() {
     }
 
     saveState();
-    updateCurrentGamePlayersUI();
-    updateAddPlayerBtnVisibility();
+    refreshGameUI();
 }
 
 function initEventListeners() {
@@ -266,6 +406,8 @@ function initEventListeners() {
         renderSavedPlayersList();
         showModal("add-player-modal");
     });
+
+    document.getElementById("undo-btn").addEventListener("click", handleUndo);
 
     document.getElementById("close-add-player-btn").addEventListener("click", hideModal);
 
@@ -284,8 +426,13 @@ function initEventListeners() {
     });
 
     document.getElementById("add-player-done-btn").addEventListener("click", () => {
+        if (state.selectedPlayers.size === 0) {
+            hideModal();
+            return;
+        }
+        captureUndoState();
         state.selectedPlayers.forEach((player) => addPlayerToGame(player));
-        updateCurrentGamePlayersUI();
+        refreshGameUI();
         hideModal();
     });
 
@@ -345,10 +492,19 @@ function initEventListeners() {
         e.preventDefault();
         document.getElementById("menu-overlay").hidden = true;
         renderSettingsPlayersList();
+        clearSettingsDataStatus();
         showModal("settings-modal");
     });
 
     document.getElementById("close-settings-btn").addEventListener("click", hideModal);
+    document.getElementById("settings-add-player-btn").addEventListener("click", () => {
+        showModal("new-player-modal");
+    });
+    document.getElementById("export-data-btn").addEventListener("click", openExportDataModal);
+    document.getElementById("import-data-btn").addEventListener("click", openImportDataModal);
+    document.getElementById("restore-backup-btn").addEventListener("click", handleRestoreBackup);
+    document.getElementById("apply-import-btn").addEventListener("click", applyImportedData);
+    document.getElementById("close-data-transfer-btn").addEventListener("click", hideModal);
 
     document.getElementById("player-tiles").addEventListener("click", async (e) => {
         const target = e.target;
@@ -358,6 +514,7 @@ function initEventListeners() {
         const playerName = tile.dataset.player;
 
         if (target.closest(".life-btn")) {
+            captureUndoState();
             const change = parseInt(target.closest(".life-btn").dataset.change, 10);
             updatePlayerLife(playerName, change);
         } else if (target.closest(".declare-winner-btn")) {
@@ -396,7 +553,7 @@ function initEventListeners() {
             tile.classList.remove("dragging");
             document
                 .querySelectorAll(".player-tile.drop-target")
-                .forEach((t) => t.classList.remove("drop-target"));
+                .forEach((dropTarget) => dropTarget.classList.remove("drop-target"));
         }
     });
 
@@ -418,14 +575,15 @@ function initEventListeners() {
     document.getElementById("player-tiles").addEventListener("drop", (e) => {
         e.preventDefault();
         const tile = e.target.closest(".player-tile");
-        if (tile) {
-            tile.classList.remove("drop-target");
-            const fromPlayer = e.dataTransfer.getData("text/plain");
-            const toPlayer = tile.dataset.player;
-            if (fromPlayer && toPlayer && fromPlayer !== toPlayer) {
-                reorderPlayers(fromPlayer, toPlayer);
-                updateCurrentGamePlayersUI();
-            }
+        if (!tile) return;
+
+        tile.classList.remove("drop-target");
+        const fromPlayer = e.dataTransfer.getData("text/plain");
+        const toPlayer = tile.dataset.player;
+        if (fromPlayer && toPlayer && fromPlayer !== toPlayer) {
+            captureUndoState();
+            reorderPlayers(fromPlayer, toPlayer);
+            refreshGameUI();
         }
     });
 
@@ -433,11 +591,12 @@ function initEventListeners() {
 
     document.getElementById("poison-plus-btn").addEventListener("click", () => {
         if (!state.currentPoisonPlayer) return;
-        state.playerState[state.currentPoisonPlayer].poison = Math.min(
-            (state.playerState[state.currentPoisonPlayer].poison || 0) + 1,
-            10
-        );
-        const count = state.playerState[state.currentPoisonPlayer].poison || 0;
+        const currentCount = state.playerState[state.currentPoisonPlayer].poison || 0;
+        if (currentCount >= GAME_LIMITS.maxPoison) return;
+
+        captureUndoState();
+        state.playerState[state.currentPoisonPlayer].poison = currentCount + 1;
+        const count = state.playerState[state.currentPoisonPlayer].poison;
         document.getElementById("poison-count-display").textContent = count;
         const tile = document.querySelector(
             `.player-tile[data-player="${state.currentPoisonPlayer}"]`
@@ -446,15 +605,17 @@ function initEventListeners() {
             const poisonCount = tile.querySelector(".poison-count");
             if (poisonCount) poisonCount.textContent = count;
         }
+        saveState();
     });
 
     document.getElementById("poison-minus-btn").addEventListener("click", () => {
         if (!state.currentPoisonPlayer) return;
-        state.playerState[state.currentPoisonPlayer].poison = Math.max(
-            (state.playerState[state.currentPoisonPlayer].poison || 0) - 1,
-            0
-        );
-        const count = state.playerState[state.currentPoisonPlayer].poison || 0;
+        const currentCount = state.playerState[state.currentPoisonPlayer].poison || 0;
+        if (currentCount <= 0) return;
+
+        captureUndoState();
+        state.playerState[state.currentPoisonPlayer].poison = currentCount - 1;
+        const count = state.playerState[state.currentPoisonPlayer].poison;
         document.getElementById("poison-count-display").textContent = count;
         const tile = document.querySelector(
             `.player-tile[data-player="${state.currentPoisonPlayer}"]`
@@ -463,6 +624,7 @@ function initEventListeners() {
             const poisonCount = tile.querySelector(".poison-count");
             if (poisonCount) poisonCount.textContent = count;
         }
+        saveState();
     });
 
     document.getElementById("close-poison-modal-btn").addEventListener("click", () => {
@@ -508,9 +670,7 @@ function initEventListeners() {
         }
     });
 
-    document.getElementById("settings-add-player-btn").addEventListener("click", () => {
-        showModal("new-player-modal");
-    });
+    updateUndoButtonState();
 }
 
-export { initEventListeners, handleSaveNewPlayer, changeCommanderDamage };
+export { changeCommanderDamage, handleSaveNewPlayer, initEventListeners };

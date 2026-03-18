@@ -1,5 +1,5 @@
 import { loadState, getDefaultPlayer, addPlayerToGame, state } from './state.js';
-import { initUI, updateCurrentGamePlayersUI, updateAddPlayerBtnVisibility } from './ui.js';
+import { initUI, updateCurrentGamePlayersUI, updateAddPlayerBtnVisibility, updateUndoButtonState } from './ui.js';
 import { initEventListeners } from './events.js';
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadState();
     updateCurrentGamePlayersUI();
     updateAddPlayerBtnVisibility();
+    updateUndoButtonState();
     initEventListeners();
 
     if (state.players.length === 0) {
@@ -16,4 +17,5 @@ document.addEventListener("DOMContentLoaded", () => {
             updateCurrentGamePlayersUI();
         }
     }
+    updateUndoButtonState();
 });

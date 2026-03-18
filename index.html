@@ -52,6 +52,9 @@
                 <button id="add-player-btn" class="secondary-btn">
                     +Player
                 </button>
+                <button id="undo-btn" class="secondary-btn" disabled>
+                    Undo
+                </button>
             </div>
         </main>
 
@@ -190,8 +193,74 @@
                             </button>
                         </div>
                     </div>
+                    <div class="settings-section">
+                        <h3>Data</h3>
+                        <div class="settings-data-actions">
+                            <button
+                                id="export-data-btn"
+                                class="mini-btn"
+                                type="button"
+                            >
+                                Export Data
+                            </button>
+                            <button
+                                id="import-data-btn"
+                                class="mini-btn"
+                                type="button"
+                            >
+                                Import Data
+                            </button>
+                            <button
+                                id="restore-backup-btn"
+                                class="mini-btn"
+                                type="button"
+                            >
+                                Restore Backup
+                            </button>
+                        </div>
+                        <div
+                            id="settings-data-status"
+                            class="settings-data-status"
+                            aria-live="polite"
+                        ></div>
+                    </div>
                     <div class="modal-actions">
                         <button id="close-settings-btn" class="primary-btn">
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <div
+                    id="data-transfer-modal"
+                    class="modal data-transfer-modal"
+                    hidden
+                >
+                    <h2 class="modal-title" id="data-transfer-title">
+                        Export Data
+                    </h2>
+                    <p id="data-transfer-help" class="data-transfer-help"></p>
+                    <textarea
+                        id="data-transfer-textarea"
+                        class="data-transfer-textarea"
+                        spellcheck="false"
+                    ></textarea>
+                    <div
+                        id="data-transfer-status"
+                        class="data-transfer-status"
+                        aria-live="polite"
+                    ></div>
+                    <div class="modal-actions">
+                        <button
+                            id="apply-import-btn"
+                            class="primary-btn"
+                            hidden
+                        >
+                            Import
+                        </button>
+                        <button
+                            id="close-data-transfer-btn"
+                            class="secondary-btn"
+                        >
                             Close
                         </button>
                     </div>
@@ -200,7 +269,7 @@
                     <h2 class="modal-title">About</h2>
                     <div class="about-content">
                         <p>
-                            Commander Life Tracker v0.5a<br />
+                            Commander Life Tracker v0.5b<br />
                             Created by
                             <a href="https://cantus.us/" target="_blank"
                                 >Sable Cantus</a

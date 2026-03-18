@@ -1,0 +1,20 @@
+const STORAGE_VERSION = 2;
+const MAX_UNDO_STACK = 25;
+
+const STORAGE_KEYS = {
+    playerList: "cmdrtrackr_players",
+    defaultPlayer: "cmdrtrackr_default_player",
+    currentGame: "cmdrtrackr_current_game",
+    currentGameBackup: "cmdrtrackr_current_game_backup",
+    gameLog: "cmdrtrackr_game_log",
+};
+
+const GAME_LIMITS = {
+    startingLife: 40,
+    maxLife: 999,
+    maxPoison: 10,
+    maxCommanderDamage: 99,
+    commanderLethal: 21,
+};
+
+export { GAME_LIMITS, MAX_UNDO_STACK, STORAGE_KEYS, STORAGE_VERSION };

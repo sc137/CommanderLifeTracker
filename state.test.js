@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import {
   state,
+  restoreBackupState,
   saveState,
   loadState,
   getSavedPlayers,
@@ -16,6 +17,8 @@ import {
   logGame,
   getGameLog,
   deleteGameLogEntry,
+  serializeAppData,
+  importAppData,
 } from './state.js';
 import { ensureGlobals, resetState } from './fixtures.js';
 
@@ -27,14 +30,43 @@ describe('State Management', () => {
   });
 
   it('should save and load state', () => {
-    state.players = ['Player 1'];
-    state.playerState = { 'Player 1': { life: 40, poison: 0, dead: false } };
+    state.players = ['Player 1', 'Player 2'];
+    state.playerState = {
+      'Player 1': { life: 40, poison: 0, dead: false },
+      'Player 2': { life: 35, poison: 1, dead: false },
+    };
+    state.commanderDamage = { 'Player 1': { 'Player 2': 3 } };
     saveState();
     state.players = [];
     state.playerState = {};
+    state.commanderDamage = {};
     loadState();
+    assert.deepStrictEqual(state.players, ['Player 1', 'Player 2']);
+    assert.deepStrictEqual(state.playerState, {
+      'Player 1': { life: 40, poison: 0, dead: false },
+      'Player 2': { life: 35, poison: 1, dead: false },
+    });
+    assert.deepStrictEqual(state.commanderDamage, { 'Player 1': { 'Player 2': 3 } });
+  });
+
+  it('should load legacy saved state without version metadata', () => {
+    global.localStorage.setItem(
+      'cmdrtrackr_current_game',
+      JSON.stringify({
+        players: ['Player 1'],
+        state: { 'Player 1': { life: 32, poison: 2, dead: false } },
+        gameEnded: false,
+        winner: null,
+      })
+    );
+
+    loadState();
+
     assert.deepStrictEqual(state.players, ['Player 1']);
-    assert.deepStrictEqual(state.playerState, { 'Player 1': { life: 40, poison: 0, dead: false } });
+    assert.deepStrictEqual(state.playerState, {
+      'Player 1': { life: 32, poison: 2, dead: false },
+    });
+    assert.deepStrictEqual(state.commanderDamage, {});
   });
 
   it('should save and get players', () => {
@@ -99,5 +131,58 @@ describe('State Management', () => {
     const log = getGameLog();
     deleteGameLogEntry(log[0].id);
     assert.strictEqual(getGameLog().length, 0);
+  });
+
+  it('should restore the previous saved game snapshot', () => {
+    state.players = ['Player 1'];
+    state.playerState = { 'Player 1': { life: 40, poison: 0, dead: false } };
+    saveState();
+
+    state.players = ['Player 1', 'Player 2'];
+    state.playerState = {
+      'Player 1': { life: 17, poison: 0, dead: false },
+      'Player 2': { life: 40, poison: 0, dead: false },
+    };
+    saveState();
+
+    assert.strictEqual(restoreBackupState(), true);
+    assert.deepStrictEqual(state.players, ['Player 1']);
+    assert.deepStrictEqual(state.playerState, {
+      'Player 1': { life: 40, poison: 0, dead: false },
+    });
+  });
+
+  it('should round-trip exported app data through import', () => {
+    savePlayer('Player 1');
+    savePlayer('Player 2');
+    setDefaultPlayer('Player 1');
+    state.players = ['Player 1', 'Player 2'];
+    state.playerState = {
+      'Player 1': { life: 31, poison: 1, dead: false },
+      'Player 2': { life: 24, poison: 0, dead: false },
+    };
+    state.commanderDamage = {
+      'Player 2': { 'Player 1': 6 },
+    };
+    saveState();
+    logGame('Player 1', ['Player 1', 'Player 2'], { 'Player 1': 31, 'Player 2': 24 });
+
+    const exported = serializeAppData();
+
+    global.localStorage.clear();
+    resetState();
+
+    assert.strictEqual(importAppData(exported), true);
+    assert.deepStrictEqual(getSavedPlayers(), ['Player 1', 'Player 2']);
+    assert.strictEqual(getDefaultPlayer(), 'Player 1');
+    assert.deepStrictEqual(state.players, ['Player 1', 'Player 2']);
+    assert.deepStrictEqual(state.playerState, {
+      'Player 1': { life: 31, poison: 1, dead: false },
+      'Player 2': { life: 24, poison: 0, dead: false },
+    });
+    assert.deepStrictEqual(state.commanderDamage, {
+      'Player 2': { 'Player 1': 6 },
+    });
+    assert.strictEqual(getGameLog().length, 1);
   });
 });

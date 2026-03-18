@@ -505,6 +505,7 @@ main {
 /* Game Controls */
 .game-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   justify-content: center;
   margin-bottom: var(--spacing-sm);
@@ -905,6 +906,60 @@ button:active {
   display: flex;
   justify-content: flex-end;
   margin-top: 0.5em;
+}
+
+.settings-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.settings-data-status,
+.data-transfer-status {
+  min-height: 1.25rem;
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.settings-data-status[data-state="success"],
+.data-transfer-status[data-state="success"] {
+  color: #166534;
+}
+
+.settings-data-status[data-state="error"],
+.data-transfer-status[data-state="error"] {
+  color: #b91c1c;
+}
+
+.data-transfer-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 320px;
+  max-width: 95vw;
+  max-height: 85vh;
+}
+
+.data-transfer-help {
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+  color: #475569;
+}
+
+.data-transfer-textarea {
+  min-height: 220px;
+  width: 100%;
+  resize: vertical;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--border-radius);
+  padding: 0.85rem 1rem;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  background: #f8fafc;
+  color: var(--color-header);
+  box-sizing: border-box;
 }
 
 /* Game Log Modal */

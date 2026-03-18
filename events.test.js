@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { setTimeout as delay } from 'node:timers/promises';
-import { state, getDefaultPlayer, getGameLog, getSavedPlayers } from './state.js';
+import { state, getDefaultPlayer, getGameLog, getSavedPlayers, savePlayer } from './state.js';
 import { initUI, updateCurrentGamePlayersUI } from './ui.js';
 import { initEventListeners, changeCommanderDamage } from './events.js';
 import { ensureGlobals, resetState, setupAppDOM } from './fixtures.js';
@@ -48,6 +48,24 @@ describe('Event Flows', () => {
     );
   });
 
+  it('should undo the last gameplay action', () => {
+    state.players = ['Alice'];
+    state.playerState = {
+      Alice: { life: 40, poison: 0, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+
+    document.querySelector('.life-btn[data-change="-1"]').click();
+    document.getElementById('undo-btn').click();
+
+    assert.strictEqual(state.playerState.Alice.life, 40);
+    assert.strictEqual(
+      document.querySelector('.player-tile[data-player="Alice"] .life-total').textContent,
+      '40'
+    );
+    assert.strictEqual(document.getElementById('undo-btn').disabled, true);
+  });
+
   it('should declare a winner from the player tile action', async () => {
     state.players = ['Alice', 'Bob'];
     state.playerState = {
@@ -92,6 +110,59 @@ describe('Event Flows', () => {
     assert.deepStrictEqual(state.commanderDamage, {});
     assert.strictEqual(state.gameEnded, false);
     assert.strictEqual(state.winner, null);
+  });
+
+  it('should export app data through the data transfer modal', () => {
+    savePlayer('Alice');
+    state.players = ['Alice'];
+    state.playerState = {
+      Alice: { life: 34, poison: 1, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+
+    document.getElementById('export-data-btn').click();
+
+    const exported = JSON.parse(document.getElementById('data-transfer-textarea').value);
+    assert.strictEqual(document.getElementById('data-transfer-modal').hidden, false);
+    assert.deepStrictEqual(exported.savedPlayers, ['Alice']);
+    assert.deepStrictEqual(exported.currentGame.players, ['Alice']);
+    assert.strictEqual(document.getElementById('apply-import-btn').hidden, true);
+  });
+
+  it('should import app data from the data transfer modal', async () => {
+    document.getElementById('import-data-btn').click();
+    document.getElementById('data-transfer-textarea').value = JSON.stringify({
+      version: 2,
+      savedPlayers: ['Alice', 'Bob'],
+      defaultPlayer: 'Alice',
+      currentGame: {
+        version: 2,
+        players: ['Alice', 'Bob'],
+        playerState: {
+          Alice: { life: 28, poison: 1, dead: false },
+          Bob: { life: 40, poison: 0, dead: false },
+        },
+        gameEnded: false,
+        winner: null,
+        commanderDamage: {
+          Bob: { Alice: 5 },
+        },
+      },
+      gameLog: [],
+    });
+
+    document.getElementById('apply-import-btn').click();
+    document.getElementById('confirm-modal-ok').click();
+    await delay(0);
+
+    assert.deepStrictEqual(getSavedPlayers(), ['Alice', 'Bob']);
+    assert.strictEqual(getDefaultPlayer(), 'Alice');
+    assert.deepStrictEqual(state.players, ['Alice', 'Bob']);
+    assert.strictEqual(state.playerState.Alice.life, 28);
+    assert.deepStrictEqual(state.commanderDamage, {
+      Bob: { Alice: 5 },
+    });
+    assert.strictEqual(document.getElementById('settings-data-status').textContent, 'Import complete.');
   });
 });
 

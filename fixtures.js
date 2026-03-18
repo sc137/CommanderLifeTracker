@@ -41,6 +41,7 @@ function resetState() {
   state.draggedPlayer = null;
   state.currentPoisonPlayer = null;
   state.commanderDamage = {};
+  state.undoStack = [];
 }
 
 function appendElement(doc, tagName, id, parent = doc.body) {
@@ -76,6 +77,7 @@ function setupAppDOM() {
   appendElement(doc, 'div', 'player-tiles');
   appendElement(doc, 'button', 'new-game-btn');
   appendElement(doc, 'button', 'add-player-btn');
+  appendElement(doc, 'button', 'undo-btn');
 
   appendElement(doc, 'div', 'modal-overlay');
 
@@ -109,7 +111,19 @@ function setupAppDOM() {
   const settingsModal = appendModal(doc, 'settings-modal');
   appendElement(doc, 'div', 'settings-players-list', settingsModal);
   appendElement(doc, 'button', 'settings-add-player-btn', settingsModal);
+  appendElement(doc, 'button', 'export-data-btn', settingsModal);
+  appendElement(doc, 'button', 'import-data-btn', settingsModal);
+  appendElement(doc, 'button', 'restore-backup-btn', settingsModal);
+  appendElement(doc, 'div', 'settings-data-status', settingsModal);
   appendElement(doc, 'button', 'close-settings-btn', settingsModal);
+
+  const dataTransferModal = appendModal(doc, 'data-transfer-modal');
+  appendElement(doc, 'div', 'data-transfer-title', dataTransferModal);
+  appendElement(doc, 'div', 'data-transfer-help', dataTransferModal);
+  appendElement(doc, 'textarea', 'data-transfer-textarea', dataTransferModal);
+  appendElement(doc, 'div', 'data-transfer-status', dataTransferModal);
+  appendElement(doc, 'button', 'apply-import-btn', dataTransferModal);
+  appendElement(doc, 'button', 'close-data-transfer-btn', dataTransferModal);
 
   const aboutModal = appendModal(doc, 'about-modal');
   appendElement(doc, 'button', 'close-about-btn', aboutModal);

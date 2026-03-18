@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.0.4'; // Update this to force cache refresh
+const CACHE_VERSION = 'v1.0.5'; // Update this to force cache refresh
 const CACHE_NAME = `cmdrtrackr-cache-${CACHE_VERSION}`;
 const CORE_ASSETS = [
   './',

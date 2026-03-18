@@ -42,6 +42,10 @@ function cloneJson(data) {
     return JSON.parse(JSON.stringify(data));
 }
 
+function isPlainObject(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 function normalizePlayers(players) {
     if (!Array.isArray(players)) return [];
     const seen = new Set();
@@ -108,6 +112,103 @@ function normalizeCommanderDamage(commanderDamage, players) {
     });
 
     return nextDamage;
+}
+
+function isStringArray(value) {
+    return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function isValidGameLogEntry(entry) {
+    return isPlainObject(entry) &&
+        Number.isFinite(entry.id) &&
+        typeof entry.winner === "string" &&
+        isStringArray(entry.players) &&
+        isPlainObject(entry.lifeTotals) &&
+        typeof entry.endedAt === "string";
+}
+
+function validateImportPayload(payload) {
+    if (!isPlainObject(payload)) {
+        return false;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(payload, "version") &&
+        !Number.isInteger(payload.version)
+    ) {
+        return false;
+    }
+
+    if (!Array.isArray(payload.savedPlayers) || !payload.savedPlayers.every((player) => typeof player === "string")) {
+        return false;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(payload, "defaultPlayer") &&
+        payload.defaultPlayer !== "" &&
+        typeof payload.defaultPlayer !== "string"
+    ) {
+        return false;
+    }
+
+    if (!isPlainObject(payload.currentGame)) {
+        return false;
+    }
+
+    if (!Array.isArray(payload.gameLog) || !payload.gameLog.every(isValidGameLogEntry)) {
+        return false;
+    }
+
+    const currentGame = payload.currentGame;
+    if (!Array.isArray(currentGame.players) || !currentGame.players.every((player) => typeof player === "string")) {
+        return false;
+    }
+
+    if (!isPlainObject(currentGame.playerState) && !isPlainObject(currentGame.state)) {
+        return false;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(currentGame, "gameEnded") &&
+        typeof currentGame.gameEnded !== "boolean"
+    ) {
+        return false;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(currentGame, "winner") &&
+        currentGame.winner !== null &&
+        typeof currentGame.winner !== "string"
+    ) {
+        return false;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(currentGame, "commanderDamage") &&
+        !isPlainObject(currentGame.commanderDamage)
+    ) {
+        return false;
+    }
+
+    const savedPlayers = normalizePlayers(payload.savedPlayers);
+    if (savedPlayers.length !== payload.savedPlayers.length) {
+        return false;
+    }
+    const currentPlayers = normalizePlayers(currentGame.players);
+    if (currentPlayers.length !== currentGame.players.length) {
+        return false;
+    }
+    const missingCurrentPlayers = currentPlayers.some((player) => !savedPlayers.includes(player));
+    if (missingCurrentPlayers) {
+        return false;
+    }
+
+    const defaultPlayer = payload.defaultPlayer;
+    if (defaultPlayer && !savedPlayers.includes(defaultPlayer)) {
+        return false;
+    }
+
+    return true;
 }
 
 function normalizeGameState(payload) {
@@ -330,7 +431,7 @@ function serializeAppData() {
 }
 
 function importAppData(payload) {
-    if (!payload || typeof payload !== "object") {
+    if (!validateImportPayload(payload)) {
         return false;
     }
 

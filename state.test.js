@@ -185,4 +185,57 @@ describe('State Management', () => {
     });
     assert.strictEqual(getGameLog().length, 1);
   });
+
+  it('should reject malformed app data imports without mutating state', () => {
+    savePlayer('Keep');
+    state.players = ['Keep'];
+    state.playerState = { Keep: { life: 40, poison: 0, dead: false } };
+    saveState();
+
+    const beforeCurrentGame = global.localStorage.getItem('cmdrtrackr_current_game');
+    const beforeSavedPlayers = getSavedPlayers();
+    const beforePlayerState = JSON.stringify(state.playerState);
+
+    const malformedPayloads = [
+      null,
+      'bad',
+      {
+        savedPlayers: 'not-array',
+        currentGame: {},
+        gameLog: [],
+      },
+      {
+        savedPlayers: ['Keep', 'Keep'],
+        defaultPlayer: 'Keep',
+        currentGame: {
+          players: ['Keep'],
+          playerState: { Keep: { life: 40, poison: 0, dead: false } },
+          gameEnded: false,
+          winner: null,
+          commanderDamage: {},
+        },
+        gameLog: [],
+      },
+      {
+        savedPlayers: ['Keep'],
+        defaultPlayer: 'Keep',
+        currentGame: {
+          players: ['Keep'],
+          playerState: { Keep: { life: 40, poison: 0, dead: false } },
+          gameEnded: false,
+          winner: null,
+          commanderDamage: {},
+        },
+        gameLog: {},
+      },
+    ];
+
+    malformedPayloads.forEach((payload) => {
+      assert.strictEqual(importAppData(payload), false);
+    });
+
+    assert.deepStrictEqual(getSavedPlayers(), beforeSavedPlayers);
+    assert.strictEqual(global.localStorage.getItem('cmdrtrackr_current_game'), beforeCurrentGame);
+    assert.strictEqual(JSON.stringify(state.playerState), beforePlayerState);
+  });
 });

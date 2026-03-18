@@ -17,24 +17,13 @@ import {
   getGameLog,
   deleteGameLogEntry,
 } from './state.js';
-
-class LocalStorageMock {
-  constructor() { this.store = {}; }
-  clear() { this.store = {}; }
-  getItem(k) { return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null; }
-  setItem(k,v) { this.store[k] = String(v); }
-  removeItem(k) { delete this.store[k]; }
-}
-
-global.localStorage = new LocalStorageMock();
+import { ensureGlobals, resetState } from './fixtures.js';
 
 describe('State Management', () => {
   beforeEach(() => {
+    ensureGlobals();
     global.localStorage.clear();
-    state.players = [];
-    state.playerState = {};
-    state.gameEnded = false;
-    state.winner = null;
+    resetState();
   });
 
   it('should save and load state', () => {

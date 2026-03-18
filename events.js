@@ -110,10 +110,16 @@ function changeCommanderDamage(player, opponent, delta) {
     if (state.commanderDamage[player][opponent] == null)
         state.commanderDamage[player][opponent] = 0;
 
-    let val = state.commanderDamage[player][opponent] + delta;
+    const previousVal = state.commanderDamage[player][opponent];
+    let val = previousVal + delta;
     if (val < 0) val = 0;
     if (val > 99) val = 99;
     state.commanderDamage[player][opponent] = val;
+
+    const appliedDelta = val - previousVal;
+    if (appliedDelta !== 0) {
+        updatePlayerLife(player, -appliedDelta);
+    }
 
     if (val >= 21) {
         const tile = document.querySelector(
@@ -507,4 +513,4 @@ function initEventListeners() {
     });
 }
 
-export { initEventListeners, handleSaveNewPlayer };
+export { initEventListeners, handleSaveNewPlayer, changeCommanderDamage };

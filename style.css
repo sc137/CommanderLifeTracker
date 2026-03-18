@@ -316,6 +316,10 @@ main {
   margin-bottom: var(--spacing-md);
 }
 
+.player-tiles-container.four-player-layout {
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+}
+
 /* Player Tile Card */
 .player-tile {
   display: flex;
@@ -1226,4 +1230,3 @@ button:active {
     height: 2.8em;
   }
 }
-

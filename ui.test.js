@@ -12,61 +12,15 @@ import {
   updateAddPlayerBtnVisibility,
   updateCommanderDamageIndicator,
 } from './ui.js';
-import { createDOM } from './test/dom.js';
 import { setTimeout as delay } from 'node:timers/promises';
-
-function setupDOM() {
-  const doc = createDOM();
-  const ids = [
-    'player-tiles',
-    'saved-players-list',
-    'settings-players-list',
-    'game-log-list',
-    'modal-overlay',
-    'add-player-modal',
-    'new-player-modal',
-    'confirm-modal',
-    'confirm-modal-title',
-    'confirm-modal-message',
-    'confirm-modal-ok',
-    'confirm-modal-cancel',
-    'add-player-btn',
-  ];
-  ids.forEach(id => {
-    const el = doc.createElement('div');
-    el.id = id;
-    if (id === 'add-player-modal' || id === 'new-player-modal' || id === 'confirm-modal') {
-      el.classList.add('modal');
-      el.hidden = true;
-    }
-    doc.body.appendChild(el);
-  });
-  const input = doc.createElement('input');
-  input.id = 'new-player-input';
-  doc.getElementById('new-player-modal').appendChild(input);
-  return doc;
-}
-
-class LocalStorageMock {
-  constructor() { this.store = {}; }
-  clear() { this.store = {}; }
-  getItem(k) { return Object.prototype.hasOwnProperty.call(this.store, k) ? this.store[k] : null; }
-  setItem(k,v) { this.store[k] = String(v); }
-  removeItem(k) { delete this.store[k]; }
-}
-
-global.window = { matchMedia: () => ({ matches: false }), navigator: {} };
-global.localStorage = new LocalStorageMock();
+import { ensureGlobals, resetState, setupAppDOM } from './fixtures.js';
 
 describe('UI Management', () => {
   beforeEach(() => {
-    const doc = setupDOM();
+    ensureGlobals();
+    const doc = setupAppDOM();
     global.document = doc;
-    state.players = [];
-    state.playerState = {};
-    state.gameEnded = false;
-    state.commanderDamage = {};
-    state.winner = null;
+    resetState();
     initUI();
   });
 
@@ -86,6 +40,23 @@ describe('UI Management', () => {
     const tiles = document.getElementById('player-tiles');
     assert.strictEqual(tiles.children.length, 1);
     assert.strictEqual(tiles.children[0].dataset.player, 'Player 1');
+  });
+
+  it('should use a dedicated layout class for four players', () => {
+    state.players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+    state.playerState = {
+      'Player 1': { life: 40, poison: 0, dead: false },
+      'Player 2': { life: 40, poison: 0, dead: false },
+      'Player 3': { life: 40, poison: 0, dead: false },
+      'Player 4': { life: 40, poison: 0, dead: false },
+    };
+
+    updateCurrentGamePlayersUI();
+
+    assert.strictEqual(
+      document.getElementById('player-tiles').classList.contains('four-player-layout'),
+      true
+    );
   });
 
   it('should show and hide a modal', () => {

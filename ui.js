@@ -121,10 +121,14 @@ function createPlayerTile(playerName) {
 function updateCurrentGamePlayersUI() {
     const container = document.getElementById("player-tiles");
     container.innerHTML = "";
+    container.classList.remove("four-player-layout");
     if (state.players.length === 0) {
         container.innerHTML =
             '<div class="empty-player-list"><h2 class="empty-player-list">There are no players in this game yet.<br><br>Press +Player to add players to the game.<br><br> You may set a default player in the Settings.</h2></div>';
         return;
+    }
+    if (state.players.length === 4) {
+        container.classList.add("four-player-layout");
     }
     state.players.forEach((player) => {
         const tile = createPlayerTile(player);

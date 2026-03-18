@@ -164,6 +164,13 @@
                 </div>
                 <div id="game-log-modal" class="modal game-log-modal" hidden>
                     <h2 class="modal-title">Game History</h2>
+                    <input
+                        id="game-log-filter-input"
+                        class="modal-input game-log-filter-input"
+                        type="text"
+                        placeholder="Filter by player or winner"
+                        autocomplete="off"
+                    />
                     <div id="game-log-list" class="game-log-list">
                         <!-- Game log entries will be injected here -->
                     </div>
@@ -175,6 +182,23 @@
                 </div>
                 <div id="settings-modal" class="modal settings-modal" hidden>
                     <h2 class="modal-title">Settings</h2>
+                    <div class="settings-section">
+                        <h3>Game Defaults</h3>
+                        <label
+                            class="settings-field-label"
+                            for="settings-starting-life-select"
+                        >
+                            Starting Life
+                        </label>
+                        <select
+                            id="settings-starting-life-select"
+                            class="settings-select"
+                        >
+                            <option value="20">20</option>
+                            <option value="30">30</option>
+                            <option value="40">40</option>
+                        </select>
+                    </div>
                     <div class="settings-section">
                         <h3>Saved Players</h3>
                         <div

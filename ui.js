@@ -1,4 +1,11 @@
-import { state, ensurePlayerState, getGameLog, getSavedPlayers, getDefaultPlayer } from './state.js';
+import {
+    state,
+    ensurePlayerState,
+    getDefaultPlayer,
+    getGameLog,
+    getSavedPlayers,
+    getStartingLife,
+} from "./state.js";
 
 let modalOverlay, addPlayerModal, newPlayerModal, aboutModal, gameLogModal, settingsModal, commanderDamageModal, poisonModal, confirmModal, dataTransferModal, newPlayerInput;
 
@@ -220,20 +227,34 @@ function renderSettingsPlayersList() {
 
 function renderGameLog() {
     const logList = document.getElementById("game-log-list");
+    const filterInput = document.getElementById("game-log-filter-input");
+    const filterValue = filterInput ? filterInput.value.trim().toLowerCase() : "";
     const log = getGameLog();
     logList.innerHTML = "";
-    if (log.length === 0) {
+    const filteredLog = log.filter((entry) => {
+        if (!filterValue) return true;
+        const haystack = [
+            entry.winner,
+            ...entry.players,
+            ...entry.players.map((player) => `${player} ${entry.lifeTotals[player]}`),
+        ]
+            .join(" ")
+            .toLowerCase();
+        return haystack.includes(filterValue);
+    });
+
+    if (filteredLog.length === 0) {
         logList.innerHTML =
-            '<div class="empty-game-log">No games played yet.</div>';
+            `<div class="empty-game-log">${filterValue ? "No matching games found." : "No games played yet."}</div>`;
         return;
     }
-    log
+    filteredLog
         .slice()
         .reverse()
         .forEach((entry) => {
             const div = document.createElement("div");
             div.className = "game-log-entry";
-            div.dataset.logId = entry.id;
+            div.dataset.logId = String(entry.id);
 
             const header = document.createElement("div");
             header.className = "game-log-header";
@@ -264,7 +285,7 @@ function renderGameLog() {
             delBtn.className = "delete-game-log-btn";
             delBtn.title = "Delete Game Log Entry";
             delBtn.innerHTML = "✖";
-            delBtn.dataset.logId = entry.id;
+            delBtn.dataset.logId = String(entry.id);
 
             div.appendChild(header);
             div.appendChild(details);
@@ -273,6 +294,12 @@ function renderGameLog() {
 
             logList.appendChild(div);
         });
+}
+
+function renderStartingLifeSetting() {
+    const select = document.getElementById("settings-starting-life-select");
+    if (!select) return;
+    select.value = String(getStartingLife());
 }
 
 function showModal(modalId) {
@@ -386,6 +413,7 @@ export {
     renderSavedPlayersList,
     renderSettingsPlayersList,
     renderGameLog,
+    renderStartingLifeSetting,
     showModal,
     hideModal,
     showConfirm,

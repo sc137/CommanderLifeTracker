@@ -105,10 +105,12 @@ function setupAppDOM() {
   appendElement(doc, 'button', 'close-poison-modal-btn', poisonModal);
 
   const gameLogModal = appendModal(doc, 'game-log-modal');
+  appendElement(doc, 'input', 'game-log-filter-input', gameLogModal);
   appendElement(doc, 'div', 'game-log-list', gameLogModal);
   appendElement(doc, 'button', 'close-game-log-btn', gameLogModal);
 
   const settingsModal = appendModal(doc, 'settings-modal');
+  appendElement(doc, 'select', 'settings-starting-life-select', settingsModal);
   appendElement(doc, 'div', 'settings-players-list', settingsModal);
   appendElement(doc, 'button', 'settings-add-player-btn', settingsModal);
   appendElement(doc, 'button', 'export-data-btn', settingsModal);

@@ -6,10 +6,12 @@ import {
   saveState,
   loadState,
   getSavedPlayers,
+  getStartingLife,
   savePlayer,
   removePlayer,
   setDefaultPlayer,
   getDefaultPlayer,
+  setStartingLife,
   addPlayerToGame,
   removePlayerFromGame,
   ensurePlayerState,
@@ -104,6 +106,20 @@ describe('State Management', () => {
     assert.deepStrictEqual(state.playerState['Player 1'], { life: 40, poison: 0, dead: false });
   });
 
+  it('should persist and return the configured starting life', () => {
+    assert.strictEqual(getStartingLife(), 40);
+    assert.strictEqual(setStartingLife(30), true);
+    assert.strictEqual(getStartingLife(), 30);
+    assert.strictEqual(setStartingLife(35), false);
+    assert.strictEqual(getStartingLife(), 30);
+  });
+
+  it('should apply the configured starting life to new player state', () => {
+    setStartingLife(30);
+    ensurePlayerState('Player 1');
+    assert.deepStrictEqual(state.playerState['Player 1'], { life: 30, poison: 0, dead: false });
+  });
+
   it('should reorder players', () => {
     addPlayerToGame('Player 1');
     addPlayerToGame('Player 2');
@@ -156,6 +172,7 @@ describe('State Management', () => {
     savePlayer('Player 1');
     savePlayer('Player 2');
     setDefaultPlayer('Player 1');
+    setStartingLife(30);
     state.players = ['Player 1', 'Player 2'];
     state.playerState = {
       'Player 1': { life: 31, poison: 1, dead: false },
@@ -175,6 +192,7 @@ describe('State Management', () => {
     assert.strictEqual(importAppData(exported), true);
     assert.deepStrictEqual(getSavedPlayers(), ['Player 1', 'Player 2']);
     assert.strictEqual(getDefaultPlayer(), 'Player 1');
+    assert.strictEqual(getStartingLife(), 30);
     assert.deepStrictEqual(state.players, ['Player 1', 'Player 2']);
     assert.deepStrictEqual(state.playerState, {
       'Player 1': { life: 31, poison: 1, dead: false },
@@ -219,6 +237,7 @@ describe('State Management', () => {
       {
         savedPlayers: ['Keep'],
         defaultPlayer: 'Keep',
+        startingLife: 35,
         currentGame: {
           players: ['Keep'],
           playerState: { Keep: { life: 40, poison: 0, dead: false } },

@@ -1,4 +1,10 @@
-import { GAME_LIMITS, MAX_UNDO_STACK, STORAGE_KEYS, STORAGE_VERSION } from "./constants.js";
+import {
+    GAME_LIMITS,
+    MAX_UNDO_STACK,
+    STARTING_LIFE_PRESETS,
+    STORAGE_KEYS,
+    STORAGE_VERSION,
+} from "./constants.js";
 
 let state = {
     players: [],
@@ -15,6 +21,7 @@ let state = {
 const {
     playerList: PLAYER_LIST_KEY,
     defaultPlayer: DEFAULT_PLAYER_KEY,
+    startingLife: STARTING_LIFE_KEY,
     currentGame: CURRENT_GAME_KEY,
     currentGameBackup: CURRENT_GAME_BACKUP_KEY,
     gameLog: GAME_LOG_KEY,
@@ -22,7 +29,7 @@ const {
 
 function getDefaultPlayerState() {
     return {
-        life: GAME_LIMITS.startingLife,
+        life: getStartingLife(),
         poison: 0,
         dead: false,
     };
@@ -62,6 +69,7 @@ function normalizePlayers(players) {
 function normalizePlayerStateMap(playerState, players) {
     const nextState = {};
     const source = playerState && typeof playerState === "object" ? playerState : {};
+    const defaultStartingLife = getStartingLife();
 
     players.forEach((player) => {
         const raw = source[player] && typeof source[player] === "object"
@@ -69,7 +77,7 @@ function normalizePlayerStateMap(playerState, players) {
             : {};
         const life = Number.isFinite(raw.life)
             ? Math.max(0, Math.min(GAME_LIMITS.maxLife, raw.life))
-            : GAME_LIMITS.startingLife;
+            : defaultStartingLife;
         const poison = Number.isFinite(raw.poison)
             ? Math.max(0, Math.min(GAME_LIMITS.maxPoison, raw.poison))
             : 0;
@@ -147,6 +155,13 @@ function validateImportPayload(payload) {
         Object.prototype.hasOwnProperty.call(payload, "defaultPlayer") &&
         payload.defaultPlayer !== "" &&
         typeof payload.defaultPlayer !== "string"
+    ) {
+        return false;
+    }
+
+    if (
+        Object.prototype.hasOwnProperty.call(payload, "startingLife") &&
+        !STARTING_LIFE_PRESETS.includes(payload.startingLife)
     ) {
         return false;
     }
@@ -342,6 +357,21 @@ function getDefaultPlayer() {
     return localStorage.getItem(DEFAULT_PLAYER_KEY) || "";
 }
 
+function getStartingLife() {
+    const storedValue = Number.parseInt(localStorage.getItem(STARTING_LIFE_KEY), 10);
+    return STARTING_LIFE_PRESETS.includes(storedValue)
+        ? storedValue
+        : GAME_LIMITS.startingLife;
+}
+
+function setStartingLife(value) {
+    if (!STARTING_LIFE_PRESETS.includes(value)) {
+        return false;
+    }
+    localStorage.setItem(STARTING_LIFE_KEY, String(value));
+    return true;
+}
+
 function addPlayerToGame(playerName) {
     if (!playerName || state.players.includes(playerName)) return false;
     state.players.push(playerName);
@@ -425,6 +455,7 @@ function serializeAppData() {
         exportedAt: new Date().toISOString(),
         savedPlayers: getSavedPlayers(),
         defaultPlayer: getDefaultPlayer(),
+        startingLife: getStartingLife(),
         currentGame: serializeGameState(),
         gameLog: getGameLog(),
     };
@@ -439,6 +470,9 @@ function importAppData(payload) {
     const defaultPlayer = savedPlayers.includes(payload.defaultPlayer)
         ? payload.defaultPlayer
         : "";
+    const startingLife = STARTING_LIFE_PRESETS.includes(payload.startingLife)
+        ? payload.startingLife
+        : GAME_LIMITS.startingLife;
     const gameLog = Array.isArray(payload.gameLog) ? payload.gameLog : [];
 
     localStorage.setItem(PLAYER_LIST_KEY, JSON.stringify(savedPlayers));
@@ -447,6 +481,7 @@ function importAppData(payload) {
     } else {
         localStorage.removeItem(DEFAULT_PLAYER_KEY);
     }
+    localStorage.setItem(STARTING_LIFE_KEY, String(startingLife));
     localStorage.setItem(GAME_LOG_KEY, JSON.stringify(gameLog));
     applyGameState(payload.currentGame, { save: true, clearUndo: true });
     return true;
@@ -479,6 +514,7 @@ export {
     getDefaultPlayer,
     getGameLog,
     getSavedPlayers,
+    getStartingLife,
     importAppData,
     loadState,
     logGame,
@@ -492,6 +528,7 @@ export {
     serializeAppData,
     serializeGameState,
     setDefaultPlayer,
+    setStartingLife,
     addPlayerToGame,
     undoLastAction,
 };

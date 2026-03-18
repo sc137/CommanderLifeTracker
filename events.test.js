@@ -1,7 +1,15 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { setTimeout as delay } from 'node:timers/promises';
-import { state, getDefaultPlayer, getGameLog, getSavedPlayers, savePlayer } from './state.js';
+import { createEvent } from './dom-fixture.js';
+import {
+  state,
+  getDefaultPlayer,
+  getGameLog,
+  getSavedPlayers,
+  getStartingLife,
+  savePlayer,
+} from './state.js';
 import { initUI, updateCurrentGamePlayersUI } from './ui.js';
 import { initEventListeners, changeCommanderDamage } from './events.js';
 import { ensureGlobals, resetState, setupAppDOM } from './fixtures.js';
@@ -112,6 +120,34 @@ describe('Event Flows', () => {
     assert.strictEqual(state.winner, null);
   });
 
+  it('should save the starting life preset from settings and use it for a new game', async () => {
+    savePlayer('Alice');
+    global.localStorage.setItem('cmdrtrackr_default_player', 'Alice');
+
+    const select = document.getElementById('settings-starting-life-select');
+    select.value = '30';
+    select.dispatchEvent(createEvent('change'));
+
+    state.players = ['Alice'];
+    state.playerState = {
+      Alice: { life: 18, poison: 0, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+
+    document.getElementById('new-game-btn').click();
+    document.getElementById('confirm-modal-ok').click();
+    await delay(0);
+
+    assert.strictEqual(getStartingLife(), 30);
+    assert.deepStrictEqual(state.playerState, {
+      Alice: { life: 30, poison: 0, dead: false },
+    });
+    assert.strictEqual(
+      document.getElementById('settings-data-status').textContent,
+      'Starting life set to 30.'
+    );
+  });
+
   it('should export app data through the data transfer modal', () => {
     savePlayer('Alice');
     state.players = ['Alice'];
@@ -135,6 +171,7 @@ describe('Event Flows', () => {
       version: 2,
       savedPlayers: ['Alice', 'Bob'],
       defaultPlayer: 'Alice',
+      startingLife: 30,
       currentGame: {
         version: 2,
         players: ['Alice', 'Bob'],
@@ -157,12 +194,47 @@ describe('Event Flows', () => {
 
     assert.deepStrictEqual(getSavedPlayers(), ['Alice', 'Bob']);
     assert.strictEqual(getDefaultPlayer(), 'Alice');
+    assert.strictEqual(getStartingLife(), 30);
     assert.deepStrictEqual(state.players, ['Alice', 'Bob']);
     assert.strictEqual(state.playerState.Alice.life, 28);
     assert.deepStrictEqual(state.commanderDamage, {
       Bob: { Alice: 5 },
     });
     assert.strictEqual(document.getElementById('settings-data-status').textContent, 'Import complete.');
+  });
+
+  it('should filter game log entries by player or winner text', () => {
+    global.localStorage.setItem(
+      'cmdrtrackr_game_log',
+      JSON.stringify([
+        {
+          id: 1,
+          winner: 'Alice',
+          players: ['Alice', 'Bob'],
+          lifeTotals: { Alice: 22, Bob: 0 },
+          endedAt: '2026-03-17T10:00:00.000Z',
+        },
+        {
+          id: 2,
+          winner: 'Carol',
+          players: ['Carol', 'Dave'],
+          lifeTotals: { Carol: 11, Dave: 0 },
+          endedAt: '2026-03-17T11:00:00.000Z',
+        },
+      ])
+    );
+
+    document.getElementById('view-log-link').click();
+
+    assert.strictEqual(document.querySelectorAll('.game-log-entry').length, 2);
+
+    const filterInput = document.getElementById('game-log-filter-input');
+    filterInput.value = 'dave';
+    filterInput.dispatchEvent(createEvent('input'));
+
+    const entries = document.querySelectorAll('.game-log-entry');
+    assert.strictEqual(entries.length, 1);
+    assert.strictEqual(entries[0].dataset.logId, '2');
   });
 });
 

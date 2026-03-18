@@ -972,6 +972,10 @@ button:active {
   max-height: 80vh;
 }
 
+.game-log-filter-input {
+  margin-bottom: 0.85rem;
+}
+
 .game-log-list {
   display: flex;
   flex-direction: column;
@@ -1042,6 +1046,22 @@ button:active {
 
 .settings-section {
   margin-bottom: var(--spacing-md);
+}
+
+.settings-field-label {
+  display: block;
+  margin: 0.5em 0 0.35em;
+  font-weight: 600;
+  color: var(--color-header);
+}
+
+.settings-select {
+  width: 100%;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--border-radius);
+  padding: 0.7em 0.9em;
+  background: #f8fafc;
+  color: var(--color-header);
 }
 
 .settings-players-list {

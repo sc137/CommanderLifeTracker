@@ -10,11 +10,13 @@ import {
     setDefaultPlayer,
     getDefaultPlayer,
     getSavedPlayers,
+    getStartingLife,
     removePlayer,
     logGame,
     deleteGameLogEntry,
     restoreBackupState,
     pushUndoState,
+    setStartingLife,
     undoLastAction,
 } from "./state.js";
 import { GAME_LIMITS } from "./constants.js";
@@ -23,6 +25,7 @@ import {
     renderSavedPlayersList,
     renderSettingsPlayersList,
     renderGameLog,
+    renderStartingLifeSetting,
     showModal,
     hideModal,
     showConfirm,
@@ -471,11 +474,13 @@ function initEventListeners() {
     document.getElementById("view-log-link").addEventListener("click", (e) => {
         e.preventDefault();
         document.getElementById("menu-overlay").hidden = true;
+        document.getElementById("game-log-filter-input").value = "";
         renderGameLog();
         showModal("game-log-modal");
     });
 
     document.getElementById("close-game-log-btn").addEventListener("click", hideModal);
+    document.getElementById("game-log-filter-input").addEventListener("input", renderGameLog);
 
     document.getElementById("game-log-list").addEventListener("click", async (e) => {
         const btn = e.target.closest(".delete-game-log-btn");
@@ -491,6 +496,7 @@ function initEventListeners() {
     document.getElementById("settings-link").addEventListener("click", (e) => {
         e.preventDefault();
         document.getElementById("menu-overlay").hidden = true;
+        renderStartingLifeSetting();
         renderSettingsPlayersList();
         clearSettingsDataStatus();
         showModal("settings-modal");
@@ -505,6 +511,15 @@ function initEventListeners() {
     document.getElementById("restore-backup-btn").addEventListener("click", handleRestoreBackup);
     document.getElementById("apply-import-btn").addEventListener("click", applyImportedData);
     document.getElementById("close-data-transfer-btn").addEventListener("click", hideModal);
+    document.getElementById("settings-starting-life-select").addEventListener("change", (e) => {
+        const nextValue = Number.parseInt(e.target.value, 10);
+        if (!setStartingLife(nextValue)) {
+            e.target.value = String(getStartingLife());
+            setSettingsDataStatus("Choose a supported starting life total.", true);
+            return;
+        }
+        setSettingsDataStatus(`Starting life set to ${nextValue}.`, false);
+    });
 
     document.getElementById("player-tiles").addEventListener("click", async (e) => {
         const target = e.target;

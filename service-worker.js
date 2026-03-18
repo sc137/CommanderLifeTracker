@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.0.1'; // Update this to force cache refresh
+const CACHE_VERSION = 'v1.0.2'; // Update this to force cache refresh
 const CACHE_NAME = `cmdrtrackr-cache-${CACHE_VERSION}`;
 const CORE_ASSETS = [
   './',
@@ -9,7 +9,7 @@ const CORE_ASSETS = [
   './ui.js',
   './events.js',
   './manifest.json',
-  // Add your icons here:
+  './resources/logo.png',
   './icon-192.png',
   './icon-512.png'
 ];
@@ -39,7 +39,7 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: Cache First for core, Network First for API, fallback to cache
+// Fetch: cache-first for the app shell and icon assets.
 self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)

@@ -1315,3 +1315,9 @@ button:active {
     height: 2.8em;
   }
 }
+
+@media (max-width: 600px) and (orientation: portrait) {
+  .player-tiles-container.four-player-layout {
+    grid-template-columns: 1fr;
+  }
+}

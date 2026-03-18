@@ -1,19 +1,27 @@
 # Commander Life Tracker
 
-Track your life totals when playing Magic the Gathering Commander (aka EDH).
+A lightweight life tracker for Magic: The Gathering Commander / EDH.
 
-✅ Set a default player that will be automatically added to each new game.
+## Features
 
-✅ Track Commander Damage from each Opponent
+✅ Track life, poison, and commander damage
 
-✅ Track Poison Counters for each Player
+✅ Undo the last game action
 
-✅ Drag player tiles to match turn order
+✅ Save a default player for new games
 
-✅ Keep a history of games played
+✅ Reorder players by drag and drop
 
-✅ Add or remove players by name
+✅ Keep a game history log
 
-✅ The first player you enter will become the "default" player
+✅ Export and import app data
 
-## [🚀 View this on the web.](https://sc137.github.io/CommanderLifeTracker)
+✅ Share backups to Files / iCloud Drive on iPhone
+
+✅ Install to your device for offline use
+
+✅ Check for app updates from Settings
+
+_*Local data stays on your device unless you export it._
+
+## [🚀 Play Online](https://sc137.github.io/CommanderLifeTracker)

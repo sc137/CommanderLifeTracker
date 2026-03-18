@@ -124,6 +124,7 @@ function setupAppDOM() {
   appendElement(doc, 'div', 'data-transfer-help', dataTransferModal);
   appendElement(doc, 'textarea', 'data-transfer-textarea', dataTransferModal);
   appendElement(doc, 'div', 'data-transfer-status', dataTransferModal);
+  appendElement(doc, 'button', 'share-export-btn', dataTransferModal);
   appendElement(doc, 'button', 'apply-import-btn', dataTransferModal);
   appendElement(doc, 'button', 'close-data-transfer-btn', dataTransferModal);
 

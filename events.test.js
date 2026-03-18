@@ -174,6 +174,49 @@ describe('Event Flows', () => {
     assert.strictEqual(document.getElementById('apply-import-btn').hidden, true);
   });
 
+  it('should share exported app data through the native share sheet when available', async () => {
+    const originalFile = global.File;
+    let sharedPayload = null;
+
+    global.File = class MockFile {
+      constructor(parts, name, options = {}) {
+        this.parts = parts;
+        this.name = name;
+        this.type = options.type;
+      }
+    };
+    global.window.navigator.share = async (payload) => {
+      sharedPayload = payload;
+    };
+    global.window.navigator.canShare = (payload) => Array.isArray(payload.files);
+
+    try {
+      savePlayer('Alice');
+      state.players = ['Alice'];
+      state.playerState = {
+        Alice: { life: 34, poison: 1, dead: false },
+      };
+      updateCurrentGamePlayersUI();
+
+      document.getElementById('export-data-btn').click();
+      assert.strictEqual(document.getElementById('share-export-btn').hidden, false);
+
+      document.getElementById('share-export-btn').click();
+      await delay(0);
+
+      assert.ok(sharedPayload);
+      assert.strictEqual(sharedPayload.title, 'Commander Life Tracker Export');
+      assert.strictEqual(Array.isArray(sharedPayload.files), true);
+      assert.strictEqual(sharedPayload.files[0].type, 'application/json');
+      assert.strictEqual(
+        document.getElementById('data-transfer-status').textContent,
+        'Export shared.'
+      );
+    } finally {
+      global.File = originalFile;
+    }
+  });
+
   it('should import app data from the data transfer modal', async () => {
     document.getElementById('import-data-btn').click();
     document.getElementById('data-transfer-textarea').value = JSON.stringify({

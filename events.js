@@ -43,6 +43,7 @@ import {
     openExportDataModal,
     openImportDataModal,
     openSettingsModal,
+    shareExportData,
 } from "./settings-controller.js";
 
 function refreshGameUI() {
@@ -415,6 +416,7 @@ function initEventListeners() {
     document.getElementById("export-data-btn").addEventListener("click", openExportDataModal);
     document.getElementById("import-data-btn").addEventListener("click", openImportDataModal);
     document.getElementById("restore-backup-btn").addEventListener("click", handleRestoreBackup);
+    document.getElementById("share-export-btn").addEventListener("click", shareExportData);
     document.getElementById("apply-import-btn").addEventListener("click", applyImportedData);
     document.getElementById("close-data-transfer-btn").addEventListener("click", hideModal);
     document.getElementById("settings-starting-life-select").addEventListener("change", handleStartingLifeChange);

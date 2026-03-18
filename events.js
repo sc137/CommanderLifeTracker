@@ -1,8 +1,6 @@
 import {
     state,
-    importAppData,
     saveState,
-    serializeAppData,
     addPlayerToGame,
     removePlayerFromGame,
     reorderPlayers,
@@ -10,13 +8,10 @@ import {
     setDefaultPlayer,
     getDefaultPlayer,
     getSavedPlayers,
-    getStartingLife,
     removePlayer,
     logGame,
     deleteGameLogEntry,
-    restoreBackupState,
     pushUndoState,
-    setStartingLife,
     undoLastAction,
 } from "./state.js";
 import { GAME_LIMITS } from "./constants.js";
@@ -25,7 +20,6 @@ import {
     renderSavedPlayersList,
     renderSettingsPlayersList,
     renderGameLog,
-    renderStartingLifeSetting,
     showModal,
     hideModal,
     showConfirm,
@@ -35,6 +29,15 @@ import {
     updateCommanderDamageIndicator,
     updateUndoButtonState,
 } from "./ui.js";
+import {
+    applyImportedData,
+    clearSettingsDataStatus,
+    handleRestoreBackup,
+    handleStartingLifeChange,
+    openExportDataModal,
+    openImportDataModal,
+    openSettingsModal,
+} from "./settings-controller.js";
 
 function refreshGameUI() {
     updateCurrentGamePlayersUI();
@@ -45,111 +48,6 @@ function refreshGameUI() {
 function captureUndoState() {
     pushUndoState();
     updateUndoButtonState();
-}
-
-function setSettingsDataStatus(message, isError = false) {
-    const status = document.getElementById("settings-data-status");
-    if (!status) return;
-    status.textContent = message;
-    status.dataset.state = isError ? "error" : "success";
-}
-
-function clearSettingsDataStatus() {
-    const status = document.getElementById("settings-data-status");
-    if (!status) return;
-    status.textContent = "";
-    status.dataset.state = "";
-}
-
-function setDataTransferStatus(message, isError = false) {
-    const status = document.getElementById("data-transfer-status");
-    if (!status) return;
-    status.textContent = message;
-    status.dataset.state = isError ? "error" : "success";
-}
-
-function configureDataTransferModal({ title, help, value, importMode }) {
-    document.getElementById("data-transfer-title").textContent = title;
-    document.getElementById("data-transfer-help").textContent = help;
-
-    const textarea = document.getElementById("data-transfer-textarea");
-    textarea.value = value;
-    textarea.readOnly = !importMode;
-    textarea.placeholder = importMode ? "Paste exported JSON here." : "";
-
-    document.getElementById("apply-import-btn").hidden = !importMode;
-    setDataTransferStatus("");
-}
-
-function openExportDataModal() {
-    configureDataTransferModal({
-        title: "Export Data",
-        help: "Copy this JSON and store it somewhere safe.",
-        value: JSON.stringify(serializeAppData(), null, 2),
-        importMode: false,
-    });
-    showModal("data-transfer-modal");
-}
-
-function openImportDataModal() {
-    configureDataTransferModal({
-        title: "Import Data",
-        help: "Paste previously exported JSON. This replaces saved players, history, and the current game.",
-        value: "",
-        importMode: true,
-    });
-    showModal("data-transfer-modal");
-    setTimeout(() => document.getElementById("data-transfer-textarea").focus(), 0);
-}
-
-async function applyImportedData() {
-    const textarea = document.getElementById("data-transfer-textarea");
-    const raw = textarea.value.trim();
-
-    if (!raw) {
-        setDataTransferStatus("Paste exported JSON before importing.", true);
-        return;
-    }
-
-    let parsed;
-    try {
-        parsed = JSON.parse(raw);
-    } catch {
-        setDataTransferStatus("Import data is not valid JSON.", true);
-        return;
-    }
-
-    const confirmed = await showConfirm(
-        "This will replace your saved players, history, and current game.",
-        "Import Data"
-    );
-    if (!confirmed) return;
-
-    if (!importAppData(parsed)) {
-        setDataTransferStatus("Import data is missing required fields.", true);
-        return;
-    }
-
-    hideModal();
-    renderSettingsPlayersList();
-    refreshGameUI();
-    setSettingsDataStatus("Import complete.", false);
-}
-
-async function handleRestoreBackup() {
-    const confirmed = await showConfirm(
-        "Restore the previous saved game snapshot?",
-        "Restore Backup"
-    );
-    if (!confirmed) return;
-
-    if (!restoreBackupState()) {
-        setSettingsDataStatus("No backup is available yet.", true);
-        return;
-    }
-
-    refreshGameUI();
-    setSettingsDataStatus("Backup restored.", false);
 }
 
 function handleUndo() {
@@ -495,11 +393,7 @@ function initEventListeners() {
 
     document.getElementById("settings-link").addEventListener("click", (e) => {
         e.preventDefault();
-        document.getElementById("menu-overlay").hidden = true;
-        renderStartingLifeSetting();
-        renderSettingsPlayersList();
-        clearSettingsDataStatus();
-        showModal("settings-modal");
+        openSettingsModal();
     });
 
     document.getElementById("close-settings-btn").addEventListener("click", hideModal);
@@ -511,15 +405,7 @@ function initEventListeners() {
     document.getElementById("restore-backup-btn").addEventListener("click", handleRestoreBackup);
     document.getElementById("apply-import-btn").addEventListener("click", applyImportedData);
     document.getElementById("close-data-transfer-btn").addEventListener("click", hideModal);
-    document.getElementById("settings-starting-life-select").addEventListener("change", (e) => {
-        const nextValue = Number.parseInt(e.target.value, 10);
-        if (!setStartingLife(nextValue)) {
-            e.target.value = String(getStartingLife());
-            setSettingsDataStatus("Choose a supported starting life total.", true);
-            return;
-        }
-        setSettingsDataStatus(`Starting life set to ${nextValue}.`, false);
-    });
+    document.getElementById("settings-starting-life-select").addEventListener("change", handleStartingLifeChange);
 
     document.getElementById("player-tiles").addEventListener("click", async (e) => {
         const target = e.target;

@@ -148,6 +148,15 @@ describe('Event Flows', () => {
     );
   });
 
+  it('should load the configured starting life when opening settings', () => {
+    global.localStorage.setItem('cmdrtrackr_starting_life', '30');
+
+    document.getElementById('settings-link').click();
+
+    assert.strictEqual(document.getElementById('settings-modal').hidden, false);
+    assert.strictEqual(document.getElementById('settings-starting-life-select').value, '30');
+  });
+
   it('should export app data through the data transfer modal', () => {
     savePlayer('Alice');
     state.players = ['Alice'];

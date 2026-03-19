@@ -56,6 +56,36 @@ describe('Event Flows', () => {
     );
   });
 
+  it('should prompt to mark a player dead when life reaches zero', async () => {
+    state.players = ['Alice'];
+    state.playerState = {
+      Alice: { life: 1, poison: 0, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+
+    document.querySelector('.life-btn[data-change="-1"]').click();
+    document.getElementById('confirm-modal-ok').click();
+    await delay(0);
+
+    assert.strictEqual(state.playerState.Alice.life, 0);
+    assert.strictEqual(state.playerState.Alice.dead, true);
+  });
+
+  it('should keep the player alive if the zero-life death prompt is declined', async () => {
+    state.players = ['Alice'];
+    state.playerState = {
+      Alice: { life: 1, poison: 0, dead: false },
+    };
+    updateCurrentGamePlayersUI();
+
+    document.querySelector('.life-btn[data-change="-1"]').click();
+    document.getElementById('confirm-modal-cancel').click();
+    await delay(0);
+
+    assert.strictEqual(state.playerState.Alice.life, 0);
+    assert.strictEqual(state.playerState.Alice.dead, false);
+  });
+
   it('should undo the last gameplay action', () => {
     state.players = ['Alice'];
     state.playerState = {

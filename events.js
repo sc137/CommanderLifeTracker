@@ -146,6 +146,39 @@ function updatePoisonUI(playerName, count) {
     }
 }
 
+async function changePlayerLife(playerName, delta) {
+    const currentLife = state.playerState[playerName]?.life;
+    if (currentLife == null) return null;
+
+    const nextLife = Math.max(
+        0,
+        Math.min(GAME_LIMITS.maxLife, currentLife + delta)
+    );
+    if (nextLife === currentLife) {
+        return currentLife;
+    }
+
+    captureUndoState();
+    adjustPlayerLife(playerName, delta);
+    updatePlayerLifeUI(playerName);
+
+    const reachedZeroLife = currentLife > 0 && nextLife === 0;
+    if (!reachedZeroLife) {
+        return nextLife;
+    }
+
+    const confirmed = await showConfirm(
+        `Mark "${playerName}" as dead at 0 life?`,
+        "Life Total"
+    );
+    if (!confirmed) {
+        return nextLife;
+    }
+
+    await markPlayerAsDied(playerName);
+    return nextLife;
+}
+
 function changeCommanderDamage(player, opponent, delta) {
     const currentValue = state.commanderDamage[player]?.[opponent] ?? 0;
     const nextValue = Math.max(
@@ -431,10 +464,8 @@ function initEventListeners() {
         const playerName = tile.dataset.player;
 
         if (target.closest(".life-btn")) {
-            captureUndoState();
             const change = parseInt(target.closest(".life-btn").dataset.change, 10);
-            adjustPlayerLife(playerName, change);
-            updatePlayerLifeUI(playerName);
+            await changePlayerLife(playerName, change);
         } else if (target.closest(".declare-winner-btn")) {
             declareWinner(playerName);
         } else if (target.closest(".commander-damage-btn")) {

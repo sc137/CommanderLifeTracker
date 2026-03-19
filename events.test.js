@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { setTimeout as delay } from 'node:timers/promises';
 import { createEvent } from './dom-fixture.js';
+import { APP_VERSION, APP_VERSION_FILE } from './constants.js';
 import {
   state,
   getDefaultPlayer,
@@ -18,6 +19,16 @@ function setupEventTestDOM() {
   ensureGlobals();
   const doc = setupAppDOM();
   global.document = doc;
+  global.fetch = async (url, options = {}) => {
+    assert.strictEqual(url, new URL(APP_VERSION_FILE, global.window.location.href).href);
+    assert.strictEqual(options.cache, 'no-store');
+    return {
+      ok: true,
+      async json() {
+        return { version: APP_VERSION };
+      },
+    };
+  };
   resetState();
   global.localStorage.clear();
   initUI();
@@ -192,6 +203,7 @@ describe('Event Flows', () => {
     const updateCalls = [];
 
     global.window.location = {
+      href: 'http://localhost/',
       reload() {
         throw new Error('reload should not be called when already up to date');
       },
@@ -214,7 +226,119 @@ describe('Event Flows', () => {
       assert.deepStrictEqual(updateCalls, ['update']);
       assert.strictEqual(
         document.getElementById('settings-data-status').textContent,
-        'Already up to date.'
+        `Already up to date. Current version: ${APP_VERSION}`
+      );
+    } finally {
+      global.window.location = originalLocation;
+    }
+  });
+
+  it('should reload when a newer server version is available', async () => {
+    const originalLocation = global.window.location;
+    const reloadCalls = [];
+
+    global.window.location = {
+      href: 'http://127.0.0.1:8080/',
+      reload() {
+        reloadCalls.push('reload');
+      },
+    };
+    global.fetch = async () => ({
+      ok: true,
+      async json() {
+        return { version: '0.5.2f' };
+      },
+    });
+    global.window.navigator.serviceWorker = {
+      async getRegistration() {
+        return {
+          waiting: null,
+          async update() {},
+        };
+      },
+    };
+
+    try {
+      document.getElementById('check-updates-btn').click();
+      await delay(0);
+
+      assert.deepStrictEqual(reloadCalls, ['reload']);
+      assert.strictEqual(
+        document.getElementById('settings-data-status').textContent,
+        `Newer version detected. Reloading... Current version: ${APP_VERSION}. Latest available version: 0.5.2f`
+      );
+    } finally {
+      global.window.location = originalLocation;
+    }
+  });
+
+  it('should activate and reload when check for updates finds a waiting worker', async () => {
+    const originalLocation = global.window.location;
+    const postMessages = [];
+    const serviceWorkerListeners = {};
+    const waitingWorker = {
+      postMessage(message) {
+        postMessages.push(message);
+      },
+    };
+    const reloadCalls = [];
+
+    global.window.location = {
+      href: 'http://localhost/',
+      reload() {
+        reloadCalls.push('reload');
+      },
+    };
+    global.window.navigator.serviceWorker = {
+      controller: {},
+      async getRegistration() {
+        return {
+          waiting: null,
+          async update() {
+            this.waiting = waitingWorker;
+          },
+        };
+      },
+      addEventListener(eventName, handler) {
+        serviceWorkerListeners[eventName] = handler;
+      },
+    };
+
+    try {
+      document.getElementById('check-updates-btn').click();
+      await delay(0);
+      serviceWorkerListeners.controllerchange();
+      await delay(0);
+
+      assert.deepStrictEqual(postMessages, ['skipWaiting']);
+      assert.deepStrictEqual(reloadCalls, ['reload']);
+      assert.strictEqual(
+        document.getElementById('settings-data-status').textContent,
+        `Update found. Reloading... Current version: ${APP_VERSION}`
+      );
+    } finally {
+      global.window.location = originalLocation;
+    }
+  });
+
+  it('should report when the server manifest is missing', async () => {
+    const originalLocation = global.window.location;
+
+    global.window.location = {
+      href: 'http://localhost/',
+    };
+    global.fetch = async () => ({
+      ok: false,
+      status: 404,
+    });
+
+    try {
+      document.getElementById('check-updates-btn').click();
+      await delay(0);
+
+      assert.strictEqual(
+        document.getElementById('settings-data-status').textContent,
+        'Version manifest is not available on this server yet.'
       );
     } finally {
       global.window.location = originalLocation;

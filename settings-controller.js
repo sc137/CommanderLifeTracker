@@ -5,6 +5,7 @@ import {
     serializeAppData,
     setStartingLife,
 } from "./state.js";
+import { APP_VERSION, APP_VERSION_FILE } from "./constants.js";
 import {
     hideModal,
     renderSettingsPlayersList,
@@ -41,6 +42,119 @@ function setDataTransferStatus(message, isError = false) {
     if (!status) return;
     status.textContent = message;
     status.dataset.state = isError ? "error" : "success";
+}
+
+function buildVersionStatus(message, latestVersion = APP_VERSION) {
+    if (latestVersion === APP_VERSION) {
+        return `${message} Current version: ${APP_VERSION}`;
+    }
+
+    return `${message} Current version: ${APP_VERSION}. Latest available version: ${latestVersion}`;
+}
+
+function parseVersion(version) {
+    return String(version)
+        .split(".")
+        .map((segment) => {
+            const match = /^(\d+)([a-z]*)$/i.exec(segment.trim());
+            if (!match) {
+                return { number: 0, suffix: segment.trim().toLowerCase() };
+            }
+            return {
+                number: Number.parseInt(match[1], 10),
+                suffix: match[2].toLowerCase(),
+            };
+        });
+}
+
+function compareVersions(left, right) {
+    const leftParts = parseVersion(left);
+    const rightParts = parseVersion(right);
+    const maxLength = Math.max(leftParts.length, rightParts.length);
+
+    for (let index = 0; index < maxLength; index += 1) {
+        const leftPart = leftParts[index] || { number: 0, suffix: "" };
+        const rightPart = rightParts[index] || { number: 0, suffix: "" };
+
+        if (leftPart.number !== rightPart.number) {
+            return leftPart.number - rightPart.number;
+        }
+        if (leftPart.suffix !== rightPart.suffix) {
+            return leftPart.suffix.localeCompare(rightPart.suffix);
+        }
+    }
+
+    return 0;
+}
+
+function getVersionManifestUrl() {
+    const currentHref =
+        window.location && typeof window.location.href === "string"
+            ? window.location.href
+            : "http://localhost/";
+    return new URL(APP_VERSION_FILE, currentHref).href;
+}
+
+async function fetchLatestAvailableVersion() {
+    if (typeof fetch !== "function") {
+        throw new Error("Fetch is unavailable");
+    }
+
+    const response = await fetch(getVersionManifestUrl(), {
+        cache: "no-store",
+        headers: {
+            Accept: "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error(`Version check failed: ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const latestVersion =
+        payload && typeof payload.version === "string"
+            ? payload.version.trim()
+            : "";
+    if (!latestVersion) {
+        throw new Error("Version payload missing version");
+    }
+
+    return latestVersion;
+}
+
+async function checkForServiceWorkerUpdate(navigatorRef, latestVersion = APP_VERSION) {
+    if (!navigatorRef || !navigatorRef.serviceWorker) {
+        setSettingsDataStatus(
+            buildVersionStatus("Already up to date.", latestVersion)
+        );
+        return "handled";
+    }
+
+    const registration = await navigatorRef.serviceWorker.getRegistration();
+    if (!registration) {
+        setSettingsDataStatus("No app update registration was found.", true);
+        return "handled";
+    }
+
+    if (registration.waiting) {
+        applyWaitingUpdate(navigatorRef, registration.waiting, latestVersion);
+        return "handled";
+    }
+
+    await registration.update();
+
+    if (registration.waiting) {
+        applyWaitingUpdate(navigatorRef, registration.waiting, latestVersion);
+        return "handled";
+    }
+
+    const installingWorker = await waitForInstallingWorker(registration);
+    if (installingWorker && navigatorRef.serviceWorker.controller) {
+        applyWaitingUpdate(navigatorRef, installingWorker, latestVersion);
+        return "handled";
+    }
+
+    return "no-worker-update";
 }
 
 function getShareExportButton() {
@@ -209,38 +323,121 @@ function openSettingsModal() {
     showModal("settings-modal");
 }
 
-async function handleCheckForUpdates() {
-    const navigatorRef = window.navigator;
-    if (!navigatorRef || !navigatorRef.serviceWorker) {
-        setSettingsDataStatus("Updates are not supported in this browser.", true);
+function waitForInstallingWorker(registration) {
+    const installingWorker = registration.installing;
+    if (!installingWorker) {
+        return Promise.resolve(null);
+    }
+
+    if (installingWorker.state === "installed") {
+        return Promise.resolve(registration.waiting || installingWorker);
+    }
+
+    return new Promise((resolve) => {
+        const onStateChange = () => {
+            if (installingWorker.state === "installed") {
+                cleanup(registration.waiting || installingWorker);
+                return;
+            }
+            if (installingWorker.state === "redundant") {
+                cleanup(null);
+            }
+        };
+
+        const cleanup = (result) => {
+            if (typeof installingWorker.removeEventListener === "function") {
+                installingWorker.removeEventListener("statechange", onStateChange);
+            }
+            resolve(result);
+        };
+
+        if (typeof installingWorker.addEventListener === "function") {
+            installingWorker.addEventListener("statechange", onStateChange);
+        }
+    });
+}
+
+function reloadWhenWorkerControlsPage(navigatorRef) {
+    let reloaded = false;
+    let fallbackTimer = null;
+
+    const reload = () => {
+        if (reloaded) return;
+        reloaded = true;
+        if (fallbackTimer != null) {
+            clearTimeout(fallbackTimer);
+        }
+        window.location.reload();
+    };
+
+    if (
+        navigatorRef.serviceWorker &&
+        typeof navigatorRef.serviceWorker.addEventListener === "function"
+    ) {
+        navigatorRef.serviceWorker.addEventListener("controllerchange", reload, {
+            once: true,
+        });
+        fallbackTimer = setTimeout(reload, 1500);
         return;
     }
 
+    reload();
+}
+
+function applyWaitingUpdate(navigatorRef, waitingWorker, latestVersion = APP_VERSION) {
+    setSettingsDataStatus(
+        buildVersionStatus("Update found. Reloading...", latestVersion)
+    );
+    waitingWorker.postMessage("skipWaiting");
+    reloadWhenWorkerControlsPage(navigatorRef);
+}
+
+async function handleCheckForUpdates() {
+    const navigatorRef = window.navigator;
+
     try {
-        const registration = await navigatorRef.serviceWorker.getRegistration();
-        if (!registration) {
-            setSettingsDataStatus("No app update registration was found.", true);
+        const latestVersion = await fetchLatestAvailableVersion();
+        const versionComparison = compareVersions(APP_VERSION, latestVersion);
+
+        if (versionComparison > 0) {
+            setSettingsDataStatus(
+                buildVersionStatus(
+                    "Running a newer app version than this server provides.",
+                    latestVersion
+                )
+            );
             return;
         }
 
-        if (registration.waiting) {
-            setSettingsDataStatus("Update found. Reloading...");
-            registration.waiting.postMessage("skipWaiting");
+        const serviceWorkerResult = await checkForServiceWorkerUpdate(
+            navigatorRef,
+            latestVersion
+        );
+        if (serviceWorkerResult === "handled") {
+            return;
+        }
+
+        if (versionComparison < 0) {
+            setSettingsDataStatus(
+                buildVersionStatus("Newer version detected. Reloading...", latestVersion)
+            );
             window.location.reload();
             return;
         }
 
-        await registration.update();
-
-        if (registration.waiting) {
-            setSettingsDataStatus("Update found. Reloading...");
-            registration.waiting.postMessage("skipWaiting");
-            window.location.reload();
+        setSettingsDataStatus(
+            buildVersionStatus("Already up to date.", latestVersion)
+        );
+        return;
+    } catch (error) {
+        if (error instanceof Error && error.message === "Version check failed: 404") {
+            setSettingsDataStatus(
+                "Version manifest is not available on this server yet.",
+                true
+            );
             return;
         }
 
-        setSettingsDataStatus("Already up to date.");
-    } catch {
         setSettingsDataStatus("Could not check for updates right now.", true);
     }
 }

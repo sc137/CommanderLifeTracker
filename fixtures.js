@@ -27,6 +27,7 @@ function ensureGlobals() {
   global.window = {
     matchMedia: () => ({ matches: false }),
     navigator: {},
+    location: { href: 'http://localhost/' },
     addEventListener() {},
   };
   global.localStorage = new LocalStorageMock();
@@ -130,6 +131,7 @@ function setupAppDOM() {
   appendElement(doc, 'button', 'close-data-transfer-btn', dataTransferModal);
 
   const aboutModal = appendModal(doc, 'about-modal');
+  appendElement(doc, 'span', 'about-version', aboutModal);
   appendElement(doc, 'button', 'close-about-btn', aboutModal);
 
   const confirmModal = appendModal(doc, 'confirm-modal');

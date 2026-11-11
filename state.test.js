@@ -6,6 +6,9 @@ import {
   saveState,
   loadState,
   getSavedPlayers,
+  getPlayerColor,
+  getPlayerColors,
+  setPlayerColor,
   getStartingLife,
   savePlayer,
   removePlayer,
@@ -82,6 +85,25 @@ describe('State Management', () => {
     savePlayer('Player 2');
     removePlayer('Player 1');
     assert.deepStrictEqual(getSavedPlayers(), ['Player 2']);
+  });
+
+  it('should save, validate, reset, and remove a player color preference', () => {
+    savePlayer('Alice');
+    assert.strictEqual(getPlayerColor('Alice'), 0);
+    assert.strictEqual(setPlayerColor('Alice', 4), true);
+    assert.strictEqual(getPlayerColor('Alice'), 4);
+    assert.deepStrictEqual(getPlayerColors(), { Alice: 4 });
+    assert.strictEqual(setPlayerColor('Alice', 9), false);
+    assert.strictEqual(setPlayerColor('Missing', 2), false);
+    assert.strictEqual(getPlayerColor('Alice'), 4);
+
+    assert.strictEqual(setPlayerColor('Alice', 0), true);
+    assert.strictEqual(getPlayerColor('Alice'), 0);
+    assert.deepStrictEqual(getPlayerColors(), {});
+
+    setPlayerColor('Alice', 6);
+    removePlayer('Alice');
+    assert.deepStrictEqual(getPlayerColors(), {});
   });
 
   it('should set and get the default player', () => {
@@ -172,6 +194,7 @@ describe('State Management', () => {
     savePlayer('Player 1');
     savePlayer('Player 2');
     setDefaultPlayer('Player 1');
+    setPlayerColor('Player 2', 4);
     setStartingLife(30);
     state.players = ['Player 1', 'Player 2'];
     state.playerState = {
@@ -185,6 +208,7 @@ describe('State Management', () => {
     logGame('Player 1', ['Player 1', 'Player 2'], { 'Player 1': 31, 'Player 2': 24 });
 
     const exported = serializeAppData();
+    assert.deepStrictEqual(exported.playerColors, { 'Player 2': 4 });
 
     global.localStorage.clear();
     resetState();
@@ -193,6 +217,7 @@ describe('State Management', () => {
     assert.deepStrictEqual(getSavedPlayers(), ['Player 1', 'Player 2']);
     assert.strictEqual(getDefaultPlayer(), 'Player 1');
     assert.strictEqual(getStartingLife(), 30);
+    assert.strictEqual(getPlayerColor('Player 2'), 4);
     assert.deepStrictEqual(state.players, ['Player 1', 'Player 2']);
     assert.deepStrictEqual(state.playerState, {
       'Player 1': { life: 31, poison: 1, dead: false },
@@ -202,6 +227,24 @@ describe('State Management', () => {
       'Player 2': { 'Player 1': 6 },
     });
     assert.strictEqual(getGameLog().length, 1);
+  });
+
+  it('should import legacy backups without color preferences', () => {
+    savePlayer('Alice');
+    setPlayerColor('Alice', 2);
+    const legacyBackup = serializeAppData();
+    delete legacyBackup.playerColors;
+    assert.strictEqual(importAppData(legacyBackup), true);
+    assert.strictEqual(getPlayerColor('Alice'), 0);
+  });
+
+  it('should reject invalid player colors in imported backups', () => {
+    savePlayer('Alice');
+    setPlayerColor('Alice', 3);
+    const invalid = serializeAppData();
+    invalid.playerColors = { Alice: 9 };
+    assert.strictEqual(importAppData(invalid), false);
+    assert.strictEqual(getPlayerColor('Alice'), 3);
   });
 
   it('should reject malformed app data imports without mutating state', () => {

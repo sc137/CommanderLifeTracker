@@ -2,10 +2,12 @@ import {
     state,
     ensurePlayerState,
     getDefaultPlayer,
+    getPlayerColor,
     getGameLog,
     getSavedPlayers,
     getStartingLife,
 } from "./state.js";
+import { PLAYER_COLOR_NAMES } from "./constants.js";
 
 let modalOverlay, addPlayerModal, newPlayerModal, aboutModal, gameLogModal, settingsModal, commanderDamageModal, poisonModal, confirmModal, dataTransferModal, newPlayerInput;
 
@@ -138,10 +140,23 @@ function updateCurrentGamePlayersUI() {
     if (state.players.length === 4) {
         container.classList.add("four-player-layout");
     }
-    // Keep each player's color stable when tiles are reordered.
-    const colorByPlayer = new Map(
-        [...state.players].sort().map((player, index) => [player, (index % 8) + 1])
-    );
+    // Assign automatic colors by name, avoiding explicitly chosen colors.
+    const preferences = new Map(state.players.map((player) => [player, getPlayerColor(player)]));
+    const usedColors = new Set([...preferences.values()].filter(Boolean));
+    const colorByPlayer = new Map();
+    [...state.players].sort().forEach((player, index) => {
+        const preferred = preferences.get(player);
+        if (preferred) {
+            colorByPlayer.set(player, preferred);
+            return;
+        }
+        let color = (index % PLAYER_COLOR_NAMES.length) + 1;
+        for (let attempt = 0; attempt < PLAYER_COLOR_NAMES.length && usedColors.has(color); attempt++) {
+            color = (color % PLAYER_COLOR_NAMES.length) + 1;
+        }
+        colorByPlayer.set(player, color);
+        usedColors.add(color);
+    });
     state.players.forEach((player) => {
         const tile = createPlayerTile(player);
         tile.dataset.color = String(colorByPlayer.get(player));
@@ -216,6 +231,31 @@ function renderSettingsPlayersList() {
             label.appendChild(unsetBtn);
         }
 
+        const colorControl = document.createElement("div");
+        colorControl.className = "settings-player-color-control";
+
+        const swatch = document.createElement("span");
+        swatch.className = "settings-player-color-swatch";
+        swatch.setAttribute("aria-hidden", "true");
+        swatch.dataset.color = String(getPlayerColor(player));
+
+        const colorSelect = document.createElement("select");
+        colorSelect.className = "settings-player-color-select";
+        colorSelect.setAttribute("aria-label", `Color for ${player}`);
+        const automaticOption = document.createElement("option");
+        automaticOption.value = "0";
+        automaticOption.textContent = "Automatic";
+        colorSelect.appendChild(automaticOption);
+        PLAYER_COLOR_NAMES.forEach((colorName, index) => {
+            const option = document.createElement("option");
+            option.value = String(index + 1);
+            option.textContent = colorName;
+            colorSelect.appendChild(option);
+        });
+        colorSelect.value = String(getPlayerColor(player));
+        colorControl.appendChild(swatch);
+        colorControl.appendChild(colorSelect);
+
         const delBtn = document.createElement("button");
         delBtn.className = "delete-player-btn";
         delBtn.title = "Delete player";
@@ -224,6 +264,7 @@ function renderSettingsPlayersList() {
         row.appendChild(radio);
         row.appendChild(name);
         row.appendChild(label);
+        row.appendChild(colorControl);
         row.appendChild(delBtn);
 
         list.appendChild(row);

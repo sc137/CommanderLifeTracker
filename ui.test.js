@@ -1,10 +1,11 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert';
-import { state } from './state.js';
+import { state, savePlayer, setPlayerColor } from './state.js';
 import {
   initUI,
   createPlayerTile,
   updateCurrentGamePlayersUI,
+  renderSettingsPlayersList,
   showModal,
   hideModal,
   showInputError,
@@ -57,6 +58,25 @@ describe('UI Management', () => {
     state.players = ['Bob', 'Morgan', 'Alice', 'Zoe'];
     updateCurrentGamePlayersUI();
     assert.deepStrictEqual(colorsByName(), originalColors);
+  });
+
+  it('uses preferred colors and avoids them for automatic colors', () => {
+    savePlayer('Alice');
+    savePlayer('Bob');
+    setPlayerColor('Alice', 2);
+    state.players = ['Alice', 'Bob'];
+    updateCurrentGamePlayersUI();
+
+    const aliceTile = document.querySelector('.player-tile[data-player="Alice"]');
+    const bobTile = document.querySelector('.player-tile[data-player="Bob"]');
+    assert.strictEqual(aliceTile.dataset.color, '2');
+    assert.notStrictEqual(bobTile.dataset.color, '2');
+
+    renderSettingsPlayersList();
+    const aliceSettings = [...document.getElementById('settings-players-list').children]
+      .find((row) => row.querySelector('.settings-player-name').textContent === 'Alice');
+    assert.strictEqual(aliceSettings.querySelector('.settings-player-color-select').value, '2');
+    assert.strictEqual(aliceSettings.querySelector('.settings-player-color-swatch').dataset.color, '2');
   });
 
   it('should use a dedicated layout class for four players', () => {

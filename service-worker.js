@@ -1,4 +1,4 @@
-const CACHE_VERSION = '0.5.2f';
+const CACHE_VERSION = '0.5.2g';
 const CACHE_NAME = `cmdrtrackr-cache-${CACHE_VERSION}`;
 const CORE_ASSETS = [
   './',

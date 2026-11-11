@@ -1,6 +1,7 @@
 import {
     GAME_LIMITS,
     MAX_UNDO_STACK,
+    PLAYER_COLOR_NAMES,
     STARTING_LIFE_PRESETS,
     STORAGE_KEYS,
     STORAGE_VERSION,
@@ -21,6 +22,7 @@ let state = {
 const {
     playerList: PLAYER_LIST_KEY,
     defaultPlayer: DEFAULT_PLAYER_KEY,
+    playerColors: PLAYER_COLORS_KEY,
     startingLife: STARTING_LIFE_KEY,
     currentGame: CURRENT_GAME_KEY,
     currentGameBackup: CURRENT_GAME_BACKUP_KEY,
@@ -163,6 +165,16 @@ function validateImportPayload(payload) {
         Object.prototype.hasOwnProperty.call(payload, "startingLife") &&
         !STARTING_LIFE_PRESETS.includes(payload.startingLife)
     ) {
+        return false;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payload, "playerColors") &&
+        (!isPlainObject(payload.playerColors) ||
+            !Object.entries(payload.playerColors).every(([name, color]) =>
+                payload.savedPlayers.includes(name) &&
+                Number.isInteger(color) &&
+                color >= 1 && color <= PLAYER_COLOR_NAMES.length
+            ))) {
         return false;
     }
 
@@ -329,6 +341,46 @@ function getSavedPlayers() {
     }
 }
 
+function getPlayerColors() {
+    const data = localStorage.getItem(PLAYER_COLORS_KEY);
+    if (!data) return {};
+    try {
+        const colors = JSON.parse(data);
+        if (!isPlainObject(colors)) return {};
+        const savedPlayers = new Set(getSavedPlayers());
+        return Object.fromEntries(
+            Object.entries(colors).filter(([name, color]) =>
+                savedPlayers.has(name) &&
+                Number.isInteger(color) &&
+                color >= 1 &&
+                color <= PLAYER_COLOR_NAMES.length
+            )
+        );
+    } catch {
+        return {};
+    }
+}
+
+function getPlayerColor(playerName) {
+    const colors = getPlayerColors();
+    return Object.prototype.hasOwnProperty.call(colors, playerName)
+        ? colors[playerName]
+        : 0;
+}
+
+function setPlayerColor(playerName, color) {
+    if (!getSavedPlayers().includes(playerName) ||
+        !Number.isInteger(color) || color < 0 || color > PLAYER_COLOR_NAMES.length) {
+        return false;
+    }
+    const colors = Object.entries(getPlayerColors()).filter(([name]) => name !== playerName);
+    if (color !== 0) {
+        colors.push([playerName, color]);
+    }
+    localStorage.setItem(PLAYER_COLORS_KEY, JSON.stringify(Object.fromEntries(colors)));
+    return true;
+}
+
 function savePlayer(playerName) {
     if (!playerName || typeof playerName !== "string") return false;
     const name = playerName.trim();
@@ -344,6 +396,7 @@ function removePlayer(playerName) {
     let players = getSavedPlayers();
     players = players.filter((name) => name !== playerName);
     localStorage.setItem(PLAYER_LIST_KEY, JSON.stringify(players));
+    localStorage.setItem(PLAYER_COLORS_KEY, JSON.stringify(getPlayerColors()));
     if (getDefaultPlayer() === playerName) {
         localStorage.removeItem(DEFAULT_PLAYER_KEY);
     }
@@ -454,6 +507,7 @@ function serializeAppData() {
         version: STORAGE_VERSION,
         exportedAt: new Date().toISOString(),
         savedPlayers: getSavedPlayers(),
+        playerColors: getPlayerColors(),
         defaultPlayer: getDefaultPlayer(),
         startingLife: getStartingLife(),
         currentGame: serializeGameState(),
@@ -476,6 +530,7 @@ function importAppData(payload) {
     const gameLog = Array.isArray(payload.gameLog) ? payload.gameLog : [];
 
     localStorage.setItem(PLAYER_LIST_KEY, JSON.stringify(savedPlayers));
+    localStorage.setItem(PLAYER_COLORS_KEY, JSON.stringify(payload.playerColors || {}));
     if (defaultPlayer) {
         localStorage.setItem(DEFAULT_PLAYER_KEY, defaultPlayer);
     } else {
@@ -513,6 +568,8 @@ export {
     ensurePlayerState,
     getDefaultPlayer,
     getGameLog,
+    getPlayerColor,
+    getPlayerColors,
     getSavedPlayers,
     getStartingLife,
     importAppData,
@@ -528,6 +585,7 @@ export {
     serializeAppData,
     serializeGameState,
     setDefaultPlayer,
+    setPlayerColor,
     setStartingLife,
     addPlayerToGame,
     undoLastAction,

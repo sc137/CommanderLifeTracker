@@ -348,42 +348,50 @@ main {
 
 
 /* Soft color coding for player tiles; game-state highlights take priority. */
-.player-tile[data-color="1"] {
+.player-tile[data-color="1"],
+.settings-player-color-swatch[data-color="1"] {
   --player-background: #eff6ff;
   --player-accent: #60a5fa;
 }
 
-.player-tile[data-color="2"] {
+.player-tile[data-color="2"],
+.settings-player-color-swatch[data-color="2"] {
   --player-background: #f0fdf4;
   --player-accent: #4ade80;
 }
 
-.player-tile[data-color="3"] {
+.player-tile[data-color="3"],
+.settings-player-color-swatch[data-color="3"] {
   --player-background: #fff7ed;
   --player-accent: #fb923c;
 }
 
-.player-tile[data-color="4"] {
+.player-tile[data-color="4"],
+.settings-player-color-swatch[data-color="4"] {
   --player-background: #f5f3ff;
   --player-accent: #a78bfa;
 }
 
-.player-tile[data-color="5"] {
+.player-tile[data-color="5"],
+.settings-player-color-swatch[data-color="5"] {
   --player-background: #fefce8;
   --player-accent: #eab308;
 }
 
-.player-tile[data-color="6"] {
+.player-tile[data-color="6"],
+.settings-player-color-swatch[data-color="6"] {
   --player-background: #fff1f2;
   --player-accent: #fb7185;
 }
 
-.player-tile[data-color="7"] {
+.player-tile[data-color="7"],
+.settings-player-color-swatch[data-color="7"] {
   --player-background: #ecfeff;
   --player-accent: #22d3ee;
 }
 
-.player-tile[data-color="8"] {
+.player-tile[data-color="8"],
+.settings-player-color-swatch[data-color="8"] {
   --player-background: #f1f5f9;
   --player-accent: #94a3b8;
 }
@@ -1139,8 +1147,10 @@ button:active {
 
 .settings-player-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.4em;
   background: #f3f4f6;
   border-radius: var(--border-radius);
   padding: 0.5em 1em;
@@ -1148,7 +1158,43 @@ button:active {
 }
 
 .settings-player-name {
-  flex: 1;
+  flex: 1 1 5em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.settings-color-help {
+  margin: 0.25em 0 0.75em;
+  color: #475569;
+  font-size: 0.9em;
+}
+
+.settings-player-color-control {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-left: auto;
+}
+
+.settings-player-color-swatch {
+  display: inline-block;
+  flex: 0 0 1.2em;
+  width: 1.2em;
+  height: 1.2em;
+  border: 2px solid var(--player-accent, #cbd5e1);
+  background: var(--player-background, #fff);
+  border-radius: 50%;
+}
+
+.settings-player-color-select {
+  max-width: 7.5em;
+  min-width: 0;
+  padding: 0.35em 0.25em;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4em;
+  background: #fff;
+  color: var(--color-header);
+  font-size: 0.95em;
 }
 
 .settings-default-radio {

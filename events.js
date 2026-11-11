@@ -4,6 +4,8 @@ import {
     removePlayerFromGame,
     reorderPlayers,
     savePlayer,
+    setPlayerColor,
+    getPlayerColor,
     setDefaultPlayer,
     getDefaultPlayer,
     getSavedPlayers,
@@ -590,6 +592,22 @@ function initEventListeners() {
             state.selectedPlayers.add(playerName);
             row.classList.add("selected");
         }
+    });
+
+    document.getElementById("settings-players-list").addEventListener("change", (e) => {
+        const select = e.target;
+        if (!select.matches(".settings-player-color-select")) return;
+        const row = select.closest(".settings-player-row");
+        if (!row) return;
+
+        const playerName = row.querySelector(".settings-player-name").textContent;
+        const color = Number.parseInt(select.value, 10);
+        if (!setPlayerColor(playerName, color)) {
+            select.value = String(getPlayerColor(playerName));
+            return;
+        }
+        row.querySelector(".settings-player-color-swatch").dataset.color = String(color);
+        updateCurrentGamePlayersUI();
     });
 
     document.getElementById("settings-players-list").addEventListener("click", async (e) => {

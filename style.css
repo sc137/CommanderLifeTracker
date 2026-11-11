@@ -331,7 +331,8 @@ main {
 .player-tile {
   display: flex;
   flex: 1 1 300px;
-  background: #fff;
+  background: var(--player-background, #fff);
+  border-left: 5px solid var(--player-accent, transparent);
   border-radius: var(--border-radius);
   box-shadow: var(--shadow);
   padding: var(--spacing-sm) var(--spacing-md);
@@ -343,6 +344,48 @@ main {
   align-items: center;
   transition: box-shadow 0.2s, transform 0.2s, border 0.2s, background 0.2s;
   position: relative;
+}
+
+
+/* Soft color coding for player tiles; game-state highlights take priority. */
+.player-tile[data-color="1"] {
+  --player-background: #eff6ff;
+  --player-accent: #60a5fa;
+}
+
+.player-tile[data-color="2"] {
+  --player-background: #f0fdf4;
+  --player-accent: #4ade80;
+}
+
+.player-tile[data-color="3"] {
+  --player-background: #fff7ed;
+  --player-accent: #fb923c;
+}
+
+.player-tile[data-color="4"] {
+  --player-background: #f5f3ff;
+  --player-accent: #a78bfa;
+}
+
+.player-tile[data-color="5"] {
+  --player-background: #fefce8;
+  --player-accent: #eab308;
+}
+
+.player-tile[data-color="6"] {
+  --player-background: #fff1f2;
+  --player-accent: #fb7185;
+}
+
+.player-tile[data-color="7"] {
+  --player-background: #ecfeff;
+  --player-accent: #22d3ee;
+}
+
+.player-tile[data-color="8"] {
+  --player-background: #f1f5f9;
+  --player-accent: #94a3b8;
 }
 
 .player-tile.dragging {

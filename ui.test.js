@@ -42,6 +42,23 @@ describe('UI Management', () => {
     assert.strictEqual(tiles.children[0].dataset.player, 'Player 1');
   });
 
+  it('assigns distinct player colors that remain stable when reordered', () => {
+    state.players = ['Zoe', 'Alice', 'Morgan', 'Bob'];
+    updateCurrentGamePlayersUI();
+    const colorsByName = () => Object.fromEntries(
+      [...document.getElementById('player-tiles').children].map((tile) => [
+        tile.dataset.player,
+        tile.dataset.color,
+      ])
+    );
+    const originalColors = colorsByName();
+    assert.strictEqual(new Set(Object.values(originalColors)).size, 4);
+
+    state.players = ['Bob', 'Morgan', 'Alice', 'Zoe'];
+    updateCurrentGamePlayersUI();
+    assert.deepStrictEqual(colorsByName(), originalColors);
+  });
+
   it('should use a dedicated layout class for four players', () => {
     state.players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
     state.playerState = {

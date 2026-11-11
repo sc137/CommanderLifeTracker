@@ -138,8 +138,13 @@ function updateCurrentGamePlayersUI() {
     if (state.players.length === 4) {
         container.classList.add("four-player-layout");
     }
+    // Keep each player's color stable when tiles are reordered.
+    const colorByPlayer = new Map(
+        [...state.players].sort().map((player, index) => [player, (index % 8) + 1])
+    );
     state.players.forEach((player) => {
         const tile = createPlayerTile(player);
+        tile.dataset.color = String(colorByPlayer.get(player));
         container.appendChild(tile);
     });
 }

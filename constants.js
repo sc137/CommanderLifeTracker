@@ -1,4 +1,4 @@
-const APP_VERSION = "0.5.2e";
+const APP_VERSION = "0.5.2f";
 const APP_VERSION_FILE = "version.json";
 const STORAGE_VERSION = 2;
 const MAX_UNDO_STACK = 25;

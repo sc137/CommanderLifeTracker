@@ -267,7 +267,7 @@ describe('Event Flows', () => {
     global.fetch = async () => ({
       ok: true,
       async json() {
-        return { version: '0.5.2h' };
+        return { version: '0.5.2i' };
       },
     });
     global.window.navigator.serviceWorker = {
@@ -286,7 +286,7 @@ describe('Event Flows', () => {
       assert.deepStrictEqual(reloadCalls, ['reload']);
       assert.strictEqual(
         document.getElementById('settings-data-status').textContent,
-        `Newer version detected. Reloading... Current version: ${APP_VERSION}. Latest available version: 0.5.2h`
+        `Newer version detected. Reloading... Current version: ${APP_VERSION}. Latest available version: 0.5.2i`
       );
     } finally {
       global.window.location = originalLocation;

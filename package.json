@@ -1,6 +1,6 @@
 {
   "name": "commanderlifetracker",
-  "version": "0.5.2g",
+  "version": "0.5.2h",
   "description": "Track your life totals when playing Magic the Gathering Commander (aka EDH).",
   "main": "app.js",
   "scripts": {
